@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Sofa, Footprints, Activity, Dumbbell, Zap } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
 
@@ -90,8 +90,8 @@ export default function SetupPage() {
                                                 key={g}
                                                 onClick={() => setFormData({ ...formData, gender: g.toLowerCase() })}
                                                 className={`flex-1 py-4 rounded-2xl border transition-all ${formData.gender === g.toLowerCase()
-                                                        ? "bg-brand-emerald text-brand-black border-brand-emerald font-semibold"
-                                                        : "bg-white/5 border-border text-muted-foreground"
+                                                    ? "bg-brand-emerald text-brand-black border-brand-emerald font-semibold"
+                                                    : "bg-white/5 border-border text-muted-foreground"
                                                     }`}
                                             >
                                                 {g}
@@ -149,17 +149,28 @@ export default function SetupPage() {
 
                         {currentStep === 2 && (
                             <div className="space-y-12 py-8">
-                                <div className="flex justify-between items-center px-4">
-                                    {[1, 2, 3, 4, 5].map((level) => (
+                                <div className="flex justify-between items-end px-4 h-24">
+                                    {[
+                                        { level: 1, icon: Sofa },
+                                        { level: 2, icon: Footprints },
+                                        { level: 3, icon: Activity },
+                                        { level: 4, icon: Dumbbell },
+                                        { level: 5, icon: Zap }
+                                    ].map((item) => (
                                         <motion.div
-                                            key={level}
+                                            key={item.level}
+                                            initial={false}
                                             animate={{
-                                                scale: formData.activity === level ? 1.2 : 0.8,
-                                                opacity: formData.activity === level ? 1 : 0.3
+                                                scale: formData.activity === item.level ? 1.5 : 1,
+                                                opacity: formData.activity === item.level ? 1 : 0.2,
+                                                y: formData.activity === item.level ? -10 : 0,
+                                                color: formData.activity === item.level ? "#22c55e" : "#94a3b8"
                                             }}
-                                            className="flex flex-col items-center gap-2"
+                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                            className="flex flex-col items-center gap-4"
                                         >
-                                            <div className={`w-3 h-3 rounded-full ${formData.activity >= level ? "bg-brand-emerald" : "bg-border"}`} />
+                                            <item.icon className="w-8 h-8" />
+                                            <div className={`w-1.5 h-1.5 rounded-full ${formData.activity >= item.level ? "bg-brand-emerald" : "bg-border"}`} />
                                         </motion.div>
                                     ))}
                                 </div>
