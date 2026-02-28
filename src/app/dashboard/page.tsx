@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Plus, Flame, Target, Trophy, ChevronRight, Apple, Drumstick, Pizza, Coffee } from "lucide-react";
+import { Plus, Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useState } from "react";
 import Link from "next/link";
@@ -155,7 +155,7 @@ export default function Dashboard() {
     );
 }
 
-function StatsCard({ label, value, sub, progress }: { label: string, value: string, sub: string, progress: number }) {
+function StatsCard({ label, value, progress }: { label: string, value: string, sub?: string, progress: number }) {
     return (
         <div className="flex flex-col items-center gap-1">
             <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-bold">{label}</span>
@@ -172,7 +172,7 @@ function StatsCard({ label, value, sub, progress }: { label: string, value: stri
     )
 }
 
-function QuickAction({ label, icon: Icon }: { label: string, icon: any }) {
+function QuickAction({ label, icon: Icon }: { label: string, icon: React.ElementType }) {
     return (
         <button className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/5 rounded-2xl whitespace-nowrap text-xs font-semibold text-muted-foreground transition-all hover:bg-brand-emerald/10 hover:text-brand-emerald hover:border-brand-emerald/20">
             <Icon className="w-3 h-3" />

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Logo } from "@/components/ui/logo";
-import { ChevronLeft, Plus, Check, Info, Zap, Leaf, Brain, FlaskConical } from "lucide-react";
+import { ChevronLeft, Check, Info, Zap, Leaf, Brain, FlaskConical } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -112,7 +111,7 @@ export default function ShakeBuilder() {
                                             <p className="text-sm text-muted-foreground">{preset.ingredients}</p>
                                         </div>
                                         <blockquote className="border-l-2 border-white/10 pl-4 py-1 italic font-serif text-sm text-white/40 mb-8 max-w-[200px]">
-                                            "{preset.quote}"
+                                            &quot;{preset.quote}&quot;
                                             <footer className="text-[10px] uppercase tracking-widest not-italic mt-2 font-sans font-bold text-white/20">
                                                 — {preset.author}
                                             </footer>

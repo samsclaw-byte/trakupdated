@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ChevronLeft, TrendingUp, Calendar, Trophy, Zap, Footprints } from "lucide-react";
+import { ChevronLeft, TrendingUp, Trophy, Zap, Footprints } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
