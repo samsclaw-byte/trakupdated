@@ -25,23 +25,25 @@ const IconSofa = ({ className, isActive }: { className?: string, isActive: boole
     </svg>
 );
 
-const IconShoe = ({ className, isActive }: { className?: string, isActive: boolean }) => (
+const IconWalking = ({ className, isActive }: { className?: string, isActive: boolean }) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M16 17c3 0 4-1 4-3l-2-6c-1-2-2-2-4-1l-5 3c-2 1-3 2-3 4l4 4h6z" />
-        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M9 13l2-1 M11 10l2-1 M13 7l2-1" />
-        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M4 20h12" />
+        <motion.circle variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} cx="12" cy="4" r="2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 6v7" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 13l2 4 1 3" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 13l-2 4-2 2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 7l3 2 1 2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 7l-3 2-1-2" />
     </svg>
 );
 
-const IconDumbbell = ({ className, isActive }: { className?: string, isActive: boolean }) => (
+const IconJogging = ({ className, isActive }: { className?: string, isActive: boolean }) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="3" y="8" width="2" height="8" rx="1" />
-        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="7" y="6" width="3" height="12" rx="1.5" />
-        <motion.line variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x1="10" y1="12" x2="14" y2="12" />
-        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="14" y="6" width="3" height="12" rx="1.5" />
-        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="19" y="8" width="2" height="8" rx="1" />
-        <motion.line variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x1="1" y1="12" x2="3" y2="12" />
-        <motion.line variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x1="21" y1="12" x2="23" y2="12" />
+        <motion.circle variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} cx="14" cy="4" r="2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M14 6l-2 7" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 13l3 4 1 3" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 13l-3 3-2-2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M13 8l3-1 2 2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M13 8l-3 1-2-2" />
     </svg>
 );
 
@@ -212,8 +214,8 @@ export default function SetupPage() {
                                 <div className="flex justify-between items-end px-4 h-24">
                                     {[
                                         { level: 1, icon: IconSofa },
-                                        { level: 2, icon: IconShoe },
-                                        { level: 3, icon: IconDumbbell },
+                                        { level: 2, icon: IconWalking },
+                                        { level: 3, icon: IconJogging },
                                         { level: 4, icon: IconRunner },
                                         { level: 5, icon: IconTrophyFire }
                                     ].map((item) => {
