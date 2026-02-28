@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { Plus, Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useState } from "react";

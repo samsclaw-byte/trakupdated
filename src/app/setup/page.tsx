@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Check, Sofa, Footprints, Activity, Dumbbell, Zap } from "lucide-react";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
 
 // Custom Silhouettes for Activity Levels
-const drawVariants: any = {
+const drawVariants: Variants = {
     inactive: { pathLength: 1, opacity: 0.4 },
     active: {
         pathLength: [0, 1],
