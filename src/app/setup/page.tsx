@@ -8,54 +8,53 @@ import { useRouter } from "next/navigation";
 
 // Custom Silhouettes for Activity Levels
 const IconSofa = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M4 6c0 0 2 8 5 10s5 1 8-1c1.5-1 3-2.5 3-2.5" />
-        <path d="M8 14l-2 5" />
-        <path d="M15 15l2 4" />
-        <path d="M5 20h14" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect x="3" y="6" width="6" height="3" rx="1.5" transform="rotate(-35 6 7.5)" />
+        <path d="M5 10l3 5h7c1 0 2 1 3 2" />
+        <path d="M7 15l-2 5M14 15l1.5 5" />
+        <path d="M4 18h12" />
     </svg>
 );
 
 const IconWalking = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="12" cy="4" r="2" />
-        <path d="M12 6v7" />
-        <path d="M12 13l2 4 1 3" />
-        <path d="M12 13l-2 4-2 2" />
-        <path d="M12 7l3 2 1 2" />
-        <path d="M12 7l-3 2-1-2" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="5" r="1.5" />
+        <path d="M12 7v5" />
+        <path d="M12 8l-2 3l1 3" />
+        <path d="M12 8l2 3l-1 3" />
+        <path d="M12 12l-2 4l-1 4" />
+        <path d="M12 12l1 4h2" />
     </svg>
 );
 
 const IconJogging = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="14" cy="4" r="2" />
-        <path d="M14 6l-2 7" />
-        <path d="M12 13l3 4 1 3" />
-        <path d="M12 13l-3 3-2-2" />
-        <path d="M13 8l3-1 2 2" />
-        <path d="M13 8l-3 1-2-2" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="14" cy="5" r="1.5" />
+        <path d="M14 7l-2 5" />
+        <path d="M13 8l-2 2l-2-1" />
+        <path d="M13 8l2 2h2" />
+        <path d="M12 12l-2 4l-2 2" />
+        <path d="M12 12l2 4v4" />
     </svg>
 );
 
 const IconRunner = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="16" cy="5" r="2" />
-        <path d="M2 10h4 M4 14h5 M3 18h3" />
-        <path d="M15 8c0 0-2 4-2 6" />
-        <path d="M13 10l3-1 2 2" />
-        <path d="M13 10l-3 1-2-2" />
-        <path d="M13 14l3 3 1 4" />
-        <path d="M13 14l-3 1-2 4" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="17" cy="5" r="1.5" />
+        <path d="M16 7l-4 4" />
+        <path d="M14 8l-3-1l-2-2" />
+        <path d="M14 8l1 3l3 1" />
+        <path d="M12 11l-3 3l-4 1" />
+        <path d="M12 11l3 3l-2 4" />
     </svg>
 );
 
 const IconTrophyFire = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M6 4h12c0 4-2 7-6 7s-6-3-6-7z" />
-        <path d="M6 4H4c-1 0-2 1-2 2s1 2 2 2h2 M18 4h2c1 0 2 1 2 2s-1 2-2 2h-2" />
-        <path d="M12 11v6 M8 17h8" />
-        <path d="M15 19c0-1.5 1-2 1.5-3 1 1 1.5 2 1.5 3 0 1.5-1.5 2.5-3 2.5s-2-1-2-2.5c0-1 .5-1.5 1-2.5 0 0 .5 1 1 2z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M8 21h8M10 17v4M14 17v4M7 4h10" />
+        <path d="M7 4c0 5 0 13 5 13s5-8 5-13" />
+        <path d="M4 6c-2 0-3 2-2 4s3 3 5 2M20 6c2 0 3 2 2 4s-3 3-5 2" />
+        <polygon points="12 8 12.8 9.5 14.5 9.8 13.2 11 13.5 12.8 12 12 10.5 12.8 10.8 11 9.5 9.8 11.2 9.5" />
     </svg>
 );
 
