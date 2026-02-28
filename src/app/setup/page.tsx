@@ -7,45 +7,62 @@ import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
 
 // Custom Silhouettes for Activity Levels
-const SilhouetteWalking = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="13" cy="4" r="2" />
-        <path d="M13 14l-2-1V8l3 1-1 5z" />
-        <path d="M8 22l1-6 2-4" />
-        <path d="M15 22l-1-5-1-3" />
-        <path d="M7 10l3 2" />
+const drawVariants: any = {
+    inactive: { pathLength: 1, opacity: 0.4 },
+    active: {
+        pathLength: [0, 1],
+        opacity: [0.4, 1],
+        transition: { duration: 1.2, ease: "easeOut" }
+    }
+};
+
+const IconSofa = ({ className, isActive }: { className?: string, isActive: boolean }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M4 6c0 0 2 8 5 10s5 1 8-1c1.5-1 3-2.5 3-2.5" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M8 14l-2 5" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M15 15l2 4" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M5 20h14" />
     </svg>
 );
 
-const SilhouetteJogging = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="15" cy="4" r="2" />
-        <path d="M12 12l-2-2V7l4-1-1 6z" />
-        <path d="M7 21l2-5 2-4" />
-        <path d="M14 21l-1-4 1-5" />
-        <path d="M6 9l3 1" />
+const IconShoe = ({ className, isActive }: { className?: string, isActive: boolean }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M16 17c3 0 4-1 4-3l-2-6c-1-2-2-2-4-1l-5 3c-2 1-3 2-3 4l4 4h6z" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M9 13l2-1 M11 10l2-1 M13 7l2-1" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M4 20h12" />
     </svg>
 );
 
-const SilhouetteSprinting = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="18" cy="5" r="2" />
-        <path d="M14 13l-3-3V7l5-2-1 8z" />
-        <path d="M5 20l4-4 3-4" />
-        <path d="M11 20l1-5 2-2" />
-        <path d="M4 11l4-1" />
+const IconDumbbell = ({ className, isActive }: { className?: string, isActive: boolean }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="3" y="8" width="2" height="8" rx="1" />
+        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="7" y="6" width="3" height="12" rx="1.5" />
+        <motion.line variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x1="10" y1="12" x2="14" y2="12" />
+        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="14" y="6" width="3" height="12" rx="1.5" />
+        <motion.rect variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x="19" y="8" width="2" height="8" rx="1" />
+        <motion.line variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x1="1" y1="12" x2="3" y2="12" />
+        <motion.line variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} x1="21" y1="12" x2="23" y2="12" />
     </svg>
 );
 
-const SilhouetteChampion = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M7 22h10v-5H7v5z" />
-        <path d="M2 22h5v-3H2v3z" />
-        <path d="M17 22h5v-2h-5v2z" />
-        <circle cx="12" cy="7" r="2" />
-        <path d="M12 14l-2-1V9l2-1 2 1v4l-2 1z" />
-        <path d="M9 10l-1-1" />
-        <path d="M15 10l1-1" />
+const IconRunner = ({ className, isActive }: { className?: string, isActive: boolean }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <motion.circle variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} cx="16" cy="5" r="2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M2 10h4 M4 14h5 M3 18h3" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M15 8c0 0-2 4-2 6" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M13 10l3-1 2 2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M13 10l-3 1-2-2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M13 14l3 3 1 4" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M13 14l-3 1-2 4" />
+    </svg>
+);
+
+const IconTrophyFire = ({ className, isActive }: { className?: string, isActive: boolean }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M6 4h12c0 4-2 7-6 7s-6-3-6-7z" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M6 4H4c-1 0-2 1-2 2s1 2 2 2h2 M18 4h2c1 0 2 1 2 2s-1 2-2 2h-2" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M12 11v6 M8 17h8" />
+        <motion.path variants={drawVariants} initial="inactive" animate={isActive ? "active" : "inactive"} d="M15 19c0-1.5 1-2 1.5-3 1 1 1.5 2 1.5 3 0 1.5-1.5 2.5-3 2.5s-2-1-2-2.5c0-1 .5-1.5 1-2.5 0 0 .5 1 1 2z" />
     </svg>
 );
 
@@ -194,28 +211,32 @@ export default function SetupPage() {
                             <div className="space-y-12 py-8">
                                 <div className="flex justify-between items-end px-4 h-24">
                                     {[
-                                        { level: 1, icon: Sofa },
-                                        { level: 2, icon: SilhouetteWalking },
-                                        { level: 3, icon: SilhouetteJogging },
-                                        { level: 4, icon: SilhouetteSprinting },
-                                        { level: 5, icon: SilhouetteChampion }
-                                    ].map((item) => (
-                                        <motion.div
-                                            key={item.level}
-                                            initial={false}
-                                            animate={{
-                                                scale: formData.activity === item.level ? 1.5 : 1,
-                                                opacity: formData.activity === item.level ? 1 : 0.2,
-                                                y: formData.activity === item.level ? -10 : 0,
-                                                color: formData.activity === item.level ? "#22c55e" : "#94a3b8"
-                                            }}
-                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                            className="flex flex-col items-center gap-4"
-                                        >
-                                            <item.icon className="w-8 h-8" />
-                                            <div className={`w-1.5 h-1.5 rounded-full ${formData.activity >= item.level ? "bg-brand-emerald" : "bg-border"}`} />
-                                        </motion.div>
-                                    ))}
+                                        { level: 1, icon: IconSofa },
+                                        { level: 2, icon: IconShoe },
+                                        { level: 3, icon: IconDumbbell },
+                                        { level: 4, icon: IconRunner },
+                                        { level: 5, icon: IconTrophyFire }
+                                    ].map((item) => {
+                                        const isActive = formData.activity === item.level;
+                                        return (
+                                            <motion.div
+                                                key={item.level}
+                                                initial={false}
+                                                animate={{
+                                                    scale: isActive ? 1.5 : 1,
+                                                    opacity: isActive ? 1 : 0.2,
+                                                    y: isActive ? -10 : 0,
+                                                    color: isActive ? "#22c55e" : "#94a3b8",
+                                                    filter: isActive ? "drop-shadow(0px 0px 8px rgba(34,197,94,0.6))" : "drop-shadow(0px 0px 0px rgba(34,197,94,0))"
+                                                }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                className="flex flex-col items-center gap-4 relative"
+                                            >
+                                                <item.icon className="w-8 h-8 relative z-10" isActive={isActive} />
+                                                <div className={`w-1.5 h-1.5 rounded-full ${formData.activity >= item.level ? "bg-brand-emerald shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-border transition-colors duration-500"}`} />
+                                            </motion.div>
+                                        );
+                                    })}
                                 </div>
                                 <input
                                     type="range"
