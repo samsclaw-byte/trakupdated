@@ -6,6 +6,49 @@ import { ChevronLeft, ChevronRight, Check, Sofa, Footprints, Activity, Dumbbell,
 import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
 
+// Custom Silhouettes for Activity Levels
+const SilhouetteWalking = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="13" cy="4" r="2" />
+        <path d="M13 14l-2-1V8l3 1-1 5z" />
+        <path d="M8 22l1-6 2-4" />
+        <path d="M15 22l-1-5-1-3" />
+        <path d="M7 10l3 2" />
+    </svg>
+);
+
+const SilhouetteJogging = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="15" cy="4" r="2" />
+        <path d="M12 12l-2-2V7l4-1-1 6z" />
+        <path d="M7 21l2-5 2-4" />
+        <path d="M14 21l-1-4 1-5" />
+        <path d="M6 9l3 1" />
+    </svg>
+);
+
+const SilhouetteSprinting = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="18" cy="5" r="2" />
+        <path d="M14 13l-3-3V7l5-2-1 8z" />
+        <path d="M5 20l4-4 3-4" />
+        <path d="M11 20l1-5 2-2" />
+        <path d="M4 11l4-1" />
+    </svg>
+);
+
+const SilhouetteChampion = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M7 22h10v-5H7v5z" />
+        <path d="M2 22h5v-3H2v3z" />
+        <path d="M17 22h5v-2h-5v2z" />
+        <circle cx="12" cy="7" r="2" />
+        <path d="M12 14l-2-1V9l2-1 2 1v4l-2 1z" />
+        <path d="M9 10l-1-1" />
+        <path d="M15 10l1-1" />
+    </svg>
+);
+
 const steps = [
     { id: "personal", title: "Basic Info", description: "Tell us about yourself." },
     { id: "stats", title: "Stats", description: "Numerical baseline." },
@@ -152,10 +195,10 @@ export default function SetupPage() {
                                 <div className="flex justify-between items-end px-4 h-24">
                                     {[
                                         { level: 1, icon: Sofa },
-                                        { level: 2, icon: Footprints },
-                                        { level: 3, icon: Activity },
-                                        { level: 4, icon: Dumbbell },
-                                        { level: 5, icon: Zap }
+                                        { level: 2, icon: SilhouetteWalking },
+                                        { level: 3, icon: SilhouetteJogging },
+                                        { level: 4, icon: SilhouetteSprinting },
+                                        { level: 5, icon: SilhouetteChampion }
                                     ].map((item) => (
                                         <motion.div
                                             key={item.level}
