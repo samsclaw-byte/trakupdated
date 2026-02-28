@@ -6,56 +6,29 @@ import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
 
-// Custom Silhouettes for Activity Levels
-const IconSofa = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <rect x="3" y="6" width="6" height="3" rx="1.5" transform="rotate(-35 6 7.5)" />
-        <path d="M5 10l3 5h7c1 0 2 1 3 2" />
-        <path d="M7 15l-2 5M14 15l1.5 5" />
-        <path d="M4 18h12" />
-    </svg>
-);
-
-const IconWalking = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="12" cy="5" r="1.5" />
-        <path d="M12 7v5" />
-        <path d="M12 8l-2 3l1 3" />
-        <path d="M12 8l2 3l-1 3" />
-        <path d="M12 12l-2 4l-1 4" />
-        <path d="M12 12l1 4h2" />
-    </svg>
-);
-
-const IconJogging = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="14" cy="5" r="1.5" />
-        <path d="M14 7l-2 5" />
-        <path d="M13 8l-2 2l-2-1" />
-        <path d="M13 8l2 2h2" />
-        <path d="M12 12l-2 4l-2 2" />
-        <path d="M12 12l2 4v4" />
-    </svg>
-);
-
-const IconRunner = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="17" cy="5" r="1.5" />
-        <path d="M16 7l-4 4" />
-        <path d="M14 8l-3-1l-2-2" />
-        <path d="M14 8l1 3l3 1" />
-        <path d="M12 11l-3 3l-4 1" />
-        <path d="M12 11l3 3l-2 4" />
-    </svg>
-);
-
-const IconTrophyFire = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M8 21h8M10 17v4M14 17v4M7 4h10" />
-        <path d="M7 4c0 5 0 13 5 13s5-8 5-13" />
-        <path d="M4 6c-2 0-3 2-2 4s3 3 5 2M20 6c2 0 3 2 2 4s-3 3-5 2" />
-        <polygon points="12 8 12.8 9.5 14.5 9.8 13.2 11 13.5 12.8 12 12 10.5 12.8 10.8 11 9.5 9.8 11.2 9.5" />
-    </svg>
+const SpritedIcon = ({ level, isActive }: { level: number, isActive: boolean }) => (
+    <div
+        className="relative w-24 h-24 overflow-hidden transition-all duration-500"
+        style={{
+            opacity: isActive ? 1 : 0,
+            transform: isActive ? 'scale(1.2)' : 'scale(1)',
+        }}
+    >
+        <div
+            className="absolute inset-0 w-full h-full"
+            style={{
+                backgroundImage: 'url("/icons_minimalist.png")',
+                backgroundSize: '500% 100%',
+                backgroundPosition: `${(level - 1) * 25}% center`,
+                mixBlendMode: 'screen',
+                filter: 'contrast(1.5) brightness(1.2)'
+            }}
+        />
+        <div
+            className="absolute inset-0 bg-brand-emerald pointer-events-none transition-opacity duration-500"
+            style={{ mixBlendMode: 'multiply', opacity: isActive ? 1 : 0 }}
+        />
+    </div>
 );
 
 const steps = [
@@ -202,33 +175,19 @@ export default function SetupPage() {
                         {currentStep === 2 && (
                             <div className="space-y-12 py-8">
                                 <div className="flex justify-between items-end px-4 h-24">
-                                    {[
-                                        { level: 1, icon: IconSofa },
-                                        { level: 2, icon: IconWalking },
-                                        { level: 3, icon: IconJogging },
-                                        { level: 4, icon: IconRunner },
-                                        { level: 5, icon: IconTrophyFire }
-                                    ].map((item) => {
-                                        const isActive = formData.activity === item.level;
+                                    {[1, 2, 3, 4, 5].map((level) => {
+                                        const isActive = formData.activity === level;
                                         return (
-                                            <motion.div
-                                                key={item.level}
-                                                initial={false}
-                                                animate={{
-                                                    scale: isActive ? 1.5 : 1,
-                                                    opacity: isActive ? 1 : 0,
-                                                    y: isActive ? -10 : 0,
-                                                    color: "#ffffff"
-                                                }}
-                                                transition={{ duration: 0.3 }}
-                                                className="flex flex-col items-center gap-4 relative"
+                                            <div
+                                                key={level}
+                                                className="flex flex-col items-center gap-4 relative cursor-pointer"
+                                                onClick={() => setFormData(prev => ({ ...prev, activity: level }))}
                                             >
-                                                <item.icon className="w-8 h-8 relative z-10" />
-                                                <div className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" : "bg-transparent transition-colors duration-500"}`} />
-                                            </motion.div>
+                                                <SpritedIcon level={level} isActive={isActive} />
+                                                <div className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-brand-emerald shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-transparent transition-colors duration-500"}`} />
+                                            </div>
                                         );
-                                    })}
-                                </div>
+                                    })}                                </div>
                                 <input
                                     type="range"
                                     min="1"
