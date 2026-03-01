@@ -4,8 +4,17 @@ import { motion } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useRive, Layout, Fit, Alignment } from '@rive-app/react-canvas';
 
 export default function LandingPage() {
+  const { RiveComponent } = useRive({
+    src: '/logo.riv',
+    stateMachines: 'Logo Pulse',
+    autoplay: true,
+    layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),
+    onLoad: () => console.log('Rive loaded')
+  });
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12 overflow-hidden bg-background">
       {/* Background Ambient Glow */}
@@ -15,9 +24,14 @@ export default function LandingPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="flex flex-col items-center space-y-12 w-full max-w-md text-center"
+        className="flex flex-col items-center space-y-8 w-full max-w-md text-center"
       >
-        <Logo className="text-6xl md:text-7xl" />
+        {/* Rive Logo Animation */}
+        <div className="w-full max-w-[400px] aspect-square flex items-center justify-center -mb-8">
+          <RiveComponent />
+        </div>
+
+        <Logo className="text-6xl md:text-7xl hidden" /> {/* Hidden if Rive replaces it, otherwise we can keep it */}
 
         <div className="space-y-4">
           <motion.h1
