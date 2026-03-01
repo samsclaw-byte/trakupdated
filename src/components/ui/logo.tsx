@@ -1,6 +1,6 @@
 "use client";
 
-import { useRive } from '@rive-app/react-canvas';
+
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -9,10 +9,7 @@ interface LogoProps {
 }
 
 export const Logo = ({ className, animate = true }: LogoProps) => {
-    const { RiveComponent } = useRive({
-        src: '/trak-logo.riv',
-        autoplay: animate,
-    });
+
 
     return (
         <div className={cn("flex items-center gap-0.5 font-sans font-bold tracking-tighter", className)}>
@@ -20,7 +17,14 @@ export const Logo = ({ className, animate = true }: LogoProps) => {
             <div className="relative flex items-center justify-center">
                 <span className="text-foreground -mr-1">k</span>
                 <div className="w-10 h-10 -ml-1 flex-shrink-0">
-                    <RiveComponent />
+                    <video
+                        src="/traklogo.mp4"
+                        autoPlay={animate}
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                    />
                 </div>
             </div>
         </div>

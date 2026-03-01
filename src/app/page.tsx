@@ -4,16 +4,10 @@ import { motion } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useRive, Layout, Fit, Alignment } from '@rive-app/react-canvas';
+
 
 export default function LandingPage() {
-  const { RiveComponent } = useRive({
-    src: '/logo.riv',
-    stateMachines: 'Logo Pulse',
-    autoplay: true,
-    layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),
-    onLoad: () => console.log('Rive loaded')
-  });
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12 overflow-hidden bg-background">
@@ -27,8 +21,15 @@ export default function LandingPage() {
         className="flex flex-col items-center space-y-8 w-full max-w-md text-center"
       >
         {/* Rive Logo Animation */}
-        <div className="w-full max-w-[400px] aspect-square flex items-center justify-center -mb-8">
-          <RiveComponent />
+        <div className="w-full max-w-[400px] aspect-square flex items-center justify-center -mb-8 overflow-hidden rounded-full">
+          <video
+            src="/traklogo.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
         </div>
 
         <Logo className="text-6xl md:text-7xl hidden" /> {/* Hidden if Rive replaces it, otherwise we can keep it */}
