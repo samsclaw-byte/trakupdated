@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { motion } from "framer-motion";
 import { ChevronLeft, TrendingUp, Trophy, Zap, Calendar } from "lucide-react";
 import Link from "next/link";

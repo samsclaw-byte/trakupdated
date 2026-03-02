@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { motion } from "framer-motion";
 import { Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee, Loader2, LineChart, LogOut } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
