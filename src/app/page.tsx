@@ -2,8 +2,6 @@
 
 import { motion } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 
 
 export default function LandingPage() {

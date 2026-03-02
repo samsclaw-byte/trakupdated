@@ -1,18 +1,31 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus, Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee, Loader2, LineChart } from "lucide-react";
+import { Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee, Loader2, LineChart } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
 import { createClient } from "@/utils/supabase/client";
 
+interface Meal {
+    id: string;
+    user_id: string;
+    meal_type: string;
+    text_entry: string;
+    calories: number;
+    protein: number;
+    fat: number;
+    fibre: number;
+    sugar: number;
+    created_at: string;
+}
+
 export default function Dashboard() {
     const [meanInput, setMealInput] = useState("");
     const [selectedType, setSelectedType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Breakfast");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [meals, setMeals] = useState<any[]>([]);
+    const [meals, setMeals] = useState<Meal[]>([]);
     const [goal, setGoal] = useState(2400);
 
     const supabase = createClient();
@@ -47,6 +60,7 @@ export default function Dashboard() {
         };
 
         fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleAddMeal = async () => {
@@ -76,7 +90,6 @@ export default function Dashboard() {
 
     const consumed = meals.reduce((sum, meal) => sum + (Number(meal.calories) || 0), 0);
     const proteinConsumed = meals.reduce((sum, meal) => sum + (Number(meal.protein) || 0), 0);
-    const carbsConsumed = 0; // Kimi strictly returns Sugar/Fibre, we aren't tracking total carbs explicitly right now per plan
     const fatConsumed = meals.reduce((sum, meal) => sum + (Number(meal.fat) || 0), 0);
 
     const percentage = Math.min((consumed / goal) * 100, 100);
