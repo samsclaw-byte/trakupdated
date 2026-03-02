@@ -9,7 +9,7 @@ interface LogoProps {
     animate?: boolean;
 }
 
-export const Logo = ({ className, animate = true }: LogoProps) => {
+export const Logo = ({ className }: LogoProps) => {
     // animate prop is kept in the interface for backward compatibility with 
     // components still passing it, but ignored here to pass strict linting cleanly.
     return (
