@@ -1,3 +1,5 @@
+"use client";
+
 import dynamic from "next/dynamic";
 
 // Load the dashboard only on the client side — it uses Supabase auth

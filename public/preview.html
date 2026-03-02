@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Rive Logo Preview</title>
+    <script src="https://unpkg.com/@rive-app/web@latest"></script>
+    <style>
+        body {
+            background: #000;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .hero {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hero">
+        <canvas id="rive-logo" width="400" height="400"
+            style="width:100%; height:auto; display:block; margin: 0 auto;"></canvas>
+        <div id="status">Loading...</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const r = new rive.Rive({
+                    src: 'trak-logo.riv', // Using the existing uploaded logo
+                    canvas: document.getElementById('rive-logo'),
+                    autoplay: true,
+                    // stateMachines: 'Logo Pulse', // Trying default first to ensure it plays
+                    layout: new rive.Layout({ fit: rive.Fit.Contain, alignment: rive.Alignment.Center }),
+                    onLoad: () => {
+                        console.log("Rive loaded");
+                        document.getElementById('status').innerText = "Rive loaded (trak-logo.riv)";
+                    },
+                    onLoadError: () => {
+                        document.getElementById('status').innerText = "Error loading Rive file.";
+                    }
+                });
+            } catch (err) {
+                document.getElementById('status').innerText = "Exception: " + err;
+            }
+        });
+    </script>
+</body>
+
+</html>
