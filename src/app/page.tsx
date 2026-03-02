@@ -61,17 +61,19 @@ export default function LandingPage() {
           transition={{ delay: 0.8, duration: 0.8 }}
           className="flex flex-col w-full space-y-4 pt-8"
         >
-          <Link href="/setup">
-            <button className="group relative flex items-center justify-center w-full px-8 py-4 bg-brand-emerald text-brand-black font-semibold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden">
-              <span className="relative z-10 flex items-center gap-2">
-                Get Started
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            </button>
-          </Link>
-
-          <button className="px-8 py-4 bg-transparent border border-border text-foreground/70 font-medium rounded-2xl transition-all hover:bg-white/5 active:scale-[0.98]">
+          <button
+            onClick={async () => {
+              const { createClient } = await import('@/utils/supabase/client');
+              const supabase = createClient();
+              await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                  redirectTo: `${window.location.origin}/auth/callback`,
+                },
+              });
+            }}
+            className="px-8 py-4 bg-transparent border border-border text-foreground/70 font-medium rounded-2xl transition-all hover:bg-white/5 active:scale-[0.98]"
+          >
             Sign in with Google
           </button>
         </motion.div>

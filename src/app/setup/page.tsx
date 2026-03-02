@@ -5,6 +5,7 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 // Premium Grade Animated Vectors
 const drawVariants: Variants = {
@@ -60,6 +61,7 @@ const steps = [
 
 export default function SetupPage() {
     const [currentStep, setCurrentStep] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         age: "",
@@ -72,11 +74,49 @@ export default function SetupPage() {
     });
     const router = useRouter();
 
-    const nextStep = () => {
+    const nextStep = async () => {
         if (currentStep < steps.length - 1) {
             setCurrentStep(s => s + 1);
         } else {
-            router.push("/loading-calc");
+            setIsSubmitting(true);
+            try {
+                // Calculate BMR (Mifflin-St Jeor)
+                let weightKg = parseFloat(formData.weight);
+                if (formData.weightUnit === 'lb') weightKg = weightKg * 0.453592;
+
+                let heightCm = parseFloat(formData.height);
+                if (formData.heightUnit === 'in') heightCm = heightCm * 2.54;
+
+                const age = parseInt(formData.age);
+
+                let bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
+                bmr += formData.gender === 'male' ? 5 : -161;
+
+                const multipliers = { 1: 1.2, 2: 1.375, 3: 1.55, 4: 1.725, 5: 1.9 };
+                const tdee = bmr * multipliers[formData.activity as keyof typeof multipliers];
+
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user) {
+                    await supabase.from('users').upsert({
+                        id: user.id,
+                        email: user.email,
+                        name: formData.name,
+                        age: age,
+                        weight: weightKg,
+                        height: heightCm,
+                        activity_level: formData.activity,
+                        bmr: Math.round(bmr),
+                        daily_calories: Math.round(tdee)
+                    });
+                }
+                router.push("/loading-calc");
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -264,10 +304,12 @@ export default function SetupPage() {
                 )}
                 <button
                     onClick={nextStep}
-                    disabled={currentStep === 0 && !formData.name}
+                    disabled={isSubmitting || (currentStep === 0 && !formData.name)}
                     className="flex-1 flex items-center justify-center gap-2 py-5 bg-brand-emerald text-brand-black font-bold rounded-2xl transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale"
                 >
-                    {currentStep === steps.length - 1 ? (
+                    {isSubmitting ? (
+                        <>Working...</>
+                    ) : currentStep === steps.length - 1 ? (
                         <>Complete <Check className="w-5 h-5" /></>
                     ) : (
                         <>Continue <ChevronRight className="w-5 h-5" /></>
