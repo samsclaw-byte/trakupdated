@@ -7,7 +7,6 @@ import { Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee, Loader2, LineChar
 import { Logo } from "@/components/ui/logo";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -144,7 +143,8 @@ export default function Dashboard() {
                     <div className="relative group">
                         <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 flex items-center justify-center bg-brand-emerald/10">
                             {avatarUrl ? (
-                                <Image src={avatarUrl} alt="Avatar" fill className="object-cover rounded-full" />
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                             ) : (
                                 <span className="text-brand-emerald text-xs font-bold">
                                     {profile?.name?.charAt(0)?.toUpperCase() ?? "?"}
