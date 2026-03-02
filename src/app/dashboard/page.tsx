@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee, Loader2, LineChart } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 
 import { createClient } from "@/utils/supabase/client";
@@ -22,13 +22,13 @@ interface Meal {
 }
 
 export default function Dashboard() {
-    const [meanInput, setMealInput] = useState("");
+    const [mealInput, setMealInput] = useState("");
     const [selectedType, setSelectedType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Breakfast");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [meals, setMeals] = useState<Meal[]>([]);
     const [goal, setGoal] = useState(2400);
 
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
 
     // Fetch User Goal & Today's Meals on load
     useEffect(() => {
@@ -64,14 +64,14 @@ export default function Dashboard() {
     }, []);
 
     const handleAddMeal = async () => {
-        if (!meanInput.trim()) return;
+        if (!mealInput.trim()) return;
         setIsSubmitting(true);
 
         try {
             const res = await fetch('/api/parse-meal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mealText: meanInput, mealType: selectedType })
+                body: JSON.stringify({ mealText: mealInput, mealType: selectedType })
             });
 
             if (!res.ok) throw new Error("Failed to parse meal");
@@ -79,7 +79,7 @@ export default function Dashboard() {
             const newMeal = await res.json();
             // Prepend the new meal to our local state so the UI updates instantly
             setMeals(prev => [newMeal, ...prev]);
-            setMealInput(""); // reset input
+            setMealInput("");
         } catch (error) {
             console.error("Error adding meal:", error);
             alert("Sorry, there was an issue logging your meal right now. Please try again.");
@@ -162,14 +162,14 @@ export default function Dashboard() {
                             type="text"
                             placeholder="2 eggs and a black coffee..."
                             className="flex-1 bg-transparent outline-none px-4 py-3 text-lg"
-                            value={meanInput}
+                            value={mealInput}
                             onChange={(e) => setMealInput(e.target.value)}
                             disabled={isSubmitting}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleAddMeal() }}
                         />
                         <button
                             onClick={handleAddMeal}
-                            disabled={!meanInput.trim() || isSubmitting}
+                            disabled={!mealInput.trim() || isSubmitting}
                             className="h-12 px-6 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
                         >
                             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add meal"}

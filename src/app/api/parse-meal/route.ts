@@ -17,6 +17,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing mealText or mealType" }, { status: 400 });
         }
 
+        if (mealText.length > 500) {
+            return NextResponse.json({ error: "Meal description too long (max 500 characters)" }, { status: 400 });
+        }
+
         // 2. Call Moonshot AI Kimi 2.5
         const apiKey = process.env.MOONSHOT_API_KEY;
         if (!apiKey) {
