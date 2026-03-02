@@ -89,8 +89,9 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
 
         return NextResponse.json(newMeal);
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Meal Parsing Error:", error);
-        return NextResponse.json({ error: error.message || "Failed to process meal" }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : "Failed to process meal";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
