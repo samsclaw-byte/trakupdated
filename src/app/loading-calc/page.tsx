@@ -21,12 +21,12 @@ export default function LoadingCalcPage() {
             setIndex((prev) => {
                 if (prev === calculationQuotes.length - 1) {
                     clearInterval(timer);
-                    setTimeout(() => router.push("/nutrition"), 1000);
+                    setTimeout(() => router.push("/nutrition"), 2500);
                     return prev;
                 }
                 return prev + 1;
             });
-        }, 1500);
+        }, 3000);
 
         return () => clearInterval(timer);
     }, [router]);

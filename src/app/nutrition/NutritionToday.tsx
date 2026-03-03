@@ -175,29 +175,31 @@ export default function NutritionToday() {
             {/* AI Input */}
             <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">What did you eat today?</h3>
-                <div className="flex items-center bg-white/5 border border-white/10 rounded-3xl p-2 transition-all focus-within:bg-white/[0.07] focus-within:border-brand-emerald/50">
-                    <input
-                        type="text"
+                <div className="flex flex-col gap-3 bg-white/5 border border-white/10 rounded-3xl p-3 transition-all focus-within:bg-white/[0.07] focus-within:border-brand-emerald/50">
+                    <textarea
                         placeholder="2 eggs and a black coffee..."
-                        className="flex-1 bg-transparent outline-none px-4 py-3 text-lg"
+                        className="w-full bg-transparent outline-none px-3 py-2 text-lg resize-none min-h-[80px]"
                         value={mealInput}
                         onChange={(e) => setMealInput(e.target.value)}
                         disabled={isSubmitting}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddMeal(); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddMeal(); } }}
                     />
-                    <button
-                        onClick={handleAddMeal}
-                        disabled={!mealInput.trim() || isSubmitting}
-                        className="h-12 px-6 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
-                    >
-                        {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add meal"}
-                    </button>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                    <QuickAction label="Breakfast" icon={Coffee} isActive={selectedType === "Breakfast"} onClick={() => setSelectedType("Breakfast")} />
-                    <QuickAction label="Lunch" icon={Pizza} isActive={selectedType === "Lunch"} onClick={() => setSelectedType("Lunch")} />
-                    <QuickAction label="Dinner" icon={Drumstick} isActive={selectedType === "Dinner"} onClick={() => setSelectedType("Dinner")} />
-                    <QuickAction label="Snack" icon={Apple} isActive={selectedType === "Snack"} onClick={() => setSelectedType("Snack")} />
+
+                    <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none">
+                        <div className="flex gap-2 flex-shrink-0">
+                            <QuickAction label="Breakfast" icon={Coffee} isActive={selectedType === "Breakfast"} onClick={() => setSelectedType("Breakfast")} />
+                            <QuickAction label="Lunch" icon={Pizza} isActive={selectedType === "Lunch"} onClick={() => setSelectedType("Lunch")} />
+                            <QuickAction label="Dinner" icon={Drumstick} isActive={selectedType === "Dinner"} onClick={() => setSelectedType("Dinner")} />
+                            <QuickAction label="Snack" icon={Apple} isActive={selectedType === "Snack"} onClick={() => setSelectedType("Snack")} />
+                        </div>
+                        <button
+                            onClick={handleAddMeal}
+                            disabled={!mealInput.trim() || isSubmitting}
+                            className="h-10 px-5 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
+                        >
+                            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add meal"}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -242,9 +244,13 @@ export default function NutritionToday() {
                                                 <h4 className="font-semibold text-foreground/90 capitalize truncate">
                                                     {meal.text_entry.substring(0, 25)}{meal.text_entry.length > 25 ? '...' : ''}
                                                 </h4>
-                                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                                                    P: {meal.protein || 0}g • C: {meal.carbs || 0}g • F: {meal.fat || 0}g • Fi: {meal.fibre || 0}g • S: {meal.sugar || 0}g
-                                                </p>
+                                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1 w-full max-w-[150px]">
+                                                    <span className="w-[50px]">P: {meal.protein || 0}g</span>
+                                                    <span className="w-[50px]">C: {meal.carbs || 0}g</span>
+                                                    <span className="w-[50px]">F: {meal.fat || 0}g</span>
+                                                    <span className="w-[50px]">Fi: {meal.fibre || 0}g</span>
+                                                    <span className="w-[50px]">S: {meal.sugar || 0}g</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3 flex-shrink-0 pl-4">

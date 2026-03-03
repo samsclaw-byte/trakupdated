@@ -131,10 +131,20 @@ export default function NutritionTrends() {
                 </div>
 
                 {/* Chart */}
-                <div className={cn("flex items-end justify-between gap-1 pt-4", view === "7d" ? "h-48" : "h-40")}>
+                <div className={cn("relative flex items-end justify-between gap-1 pt-4", view === "7d" ? "h-48" : "h-40")}>
+                    {/* Goal Baseline */}
+                    <div
+                        className="absolute left-0 right-0 border-t border-dashed border-white/20 z-0 flex items-center"
+                        style={{ bottom: `${Math.min((goal / maxCalories) * 100, 100)}%` }}
+                    >
+                        <span className="text-[8px] bg-background/80 px-1 text-muted-foreground/50 tracking-widest uppercase font-bold absolute -top-1.5 right-0 rounded">
+                            Target ({goal})
+                        </span>
+                    </div>
+
                     {isLoading ? (
                         Array.from({ length: view === "7d" ? 7 : 14 }).map((_, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-3">
+                            <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full justify-end z-10">
                                 <div
                                     className="w-full bg-white/5 rounded-lg animate-pulse"
                                     style={{ height: `${Math.random() * 60 + 20}%` }}
@@ -144,22 +154,23 @@ export default function NutritionTrends() {
                         ))
                     ) : (
                         chartData.map((d, i) => (
-                            <div key={i} className="relative flex-1 flex flex-col items-center group">
+                            <div key={i} className="relative flex-1 flex flex-col items-center group h-full justify-end z-10">
                                 <motion.div
                                     initial={{ height: 0 }}
                                     animate={{ height: d.calories > 0 ? `${(d.calories / maxCalories) * 100}%` : "4px" }}
                                     transition={{ duration: 0.8, delay: i * 0.04 }}
                                     className={cn(
-                                        "w-full rounded-lg transition-colors relative",
-                                        d.calories > 0
-                                            ? "bg-brand-emerald/30 group-hover:bg-brand-emerald/60"
-                                            : "bg-white/5"
+                                        "w-full rounded-t-lg transition-colors relative",
+                                        d.calories > goal
+                                            ? "bg-red-400/40 group-hover:bg-red-400/60"
+                                            : d.calories > 0
+                                                ? "bg-brand-emerald/40 group-hover:bg-brand-emerald/60"
+                                                : "bg-white/5"
                                     )}
                                 >
-                                    {d.calories >= goal && <div className="absolute top-0 left-0 right-0 h-[2px] bg-brand-emerald opacity-80 rounded-full" />}
                                 </motion.div>
                                 {view === "7d" && (
-                                    <span className="text-[10px] uppercase tracking-tighter text-muted-foreground mt-3 font-bold">{d.day}</span>
+                                    <span className="text-[10px] uppercase tracking-tighter text-muted-foreground mt-3 font-bold shrink-0">{d.day}</span>
                                 )}
                             </div>
                         ))

@@ -19,7 +19,7 @@ export default function LandingPage() {
         className="flex flex-col items-center space-y-8 w-full max-w-md text-center"
       >
         {/* Rive Logo Animation */}
-        <div className="w-full max-w-[400px] aspect-square flex items-center justify-center -mb-8 overflow-hidden rounded-full">
+        <div className="w-full max-w-[400px] aspect-square flex items-center justify-center overflow-hidden rounded-full">
           <video
             src="/traklogo.mp4"
             autoPlay
@@ -70,7 +70,7 @@ export default function LandingPage() {
                 },
               });
             }}
-            className="px-8 py-4 bg-transparent border border-border text-foreground/70 font-medium rounded-2xl transition-all hover:bg-white/5 active:scale-[0.98]"
+            className="px-8 py-4 bg-foreground text-background font-bold text-base md:text-lg rounded-2xl transition-all hover:bg-foreground/90 active:scale-[0.98] shadow-xl shadow-brand-emerald/10"
           >
             Sign in with Google
           </button>
