@@ -54,10 +54,28 @@ export default function HabitsTrends() {
 
             if (habitDefs) setHabits(habitDefs);
 
+            // Get earliest habit log to determine true start date
+            const { data: firstLog } = await supabase
+                .from('habit_logs')
+                .select('date')
+                .eq('user_id', user.id)
+                .order('date', { ascending: true })
+                .limit(1)
+                .single();
+
             const days = view === "7d" ? 7 : 28;
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - (days - 1));
-            const startStr = startDate.toISOString().split('T')[0];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const chartStartDateStr = new Date();
+            chartStartDateStr.setDate(today.getDate() - (days - 1));
+            let startStr = chartStartDateStr.toISOString().split('T')[0];
+
+            if (firstLog && firstLog.date) {
+                if (firstLog.date > startStr) {
+                    startStr = firstLog.date;
+                }
+            }
 
             const { data: habitLogs } = await supabase
                 .from('habit_logs')
@@ -75,10 +93,29 @@ export default function HabitsTrends() {
 
     // Build date range
     const days = view === "7d" ? 7 : 28;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startStr = new Date();
+    startStr.setDate(today.getDate() - (days - 1));
+    let actualStartStr = startStr.toISOString().split('T')[0];
+
+    // We need to recreate the crop logic here synchronously since we can't await in render, 
+    // but we can just use the earliest date from our `logs` state (which is already cropped by the DB query)
+    if (logs.length > 0) {
+        const earliestLog = logs.reduce((min, p) => p.date < min ? p.date : min, logs[0].date);
+        if (earliestLog > actualStartStr) {
+            actualStartStr = earliestLog;
+        }
+    }
+
+    const chartStartDate = new Date(actualStartStr);
+    const actualDays = Math.max(1, Math.floor((today.getTime() - chartStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
     const dateRange: string[] = [];
-    for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
+    for (let i = actualDays - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
         dateRange.push(d.toISOString().split('T')[0]);
     }
 

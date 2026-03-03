@@ -36,16 +36,39 @@ export default function NutritionTrends() {
                 .single();
             if (profile?.daily_calories) setGoal(profile.daily_calories);
 
+            // Get earliest meal to determine true start date
+            const { data: firstMeal } = await supabase
+                .from('meals')
+                .select('created_at')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: true })
+                .limit(1)
+                .single();
+
             const days = view === "7d" ? 7 : 28;
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - (days - 1));
-            startDate.setHours(0, 0, 0, 0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let chartStartDate = new Date(today);
+            chartStartDate.setDate(today.getDate() - (days - 1));
+
+            // If user's first entry is more recent than the window, crop the window
+            if (firstMeal) {
+                const firstMealDate = new Date(firstMeal.created_at);
+                firstMealDate.setHours(0, 0, 0, 0);
+                if (firstMealDate > chartStartDate) {
+                    chartStartDate = firstMealDate;
+                }
+            }
+
+            // Calculate actual days to show based on cropped start date
+            const actualDays = Math.max(1, Math.floor((today.getTime() - chartStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
             const { data: meals } = await supabase
                 .from('meals')
                 .select('calories, created_at')
                 .eq('user_id', user.id)
-                .gte('created_at', startDate.toISOString())
+                .gte('created_at', chartStartDate.toISOString())
                 .order('created_at', { ascending: true });
 
             const calorieMap: Record<string, number> = {};
@@ -56,13 +79,12 @@ export default function NutritionTrends() {
 
             const result: DailyCalories[] = [];
             let streakCount = 0;
-            const today = new Date();
 
-            for (let i = days - 1; i >= 0; i--) {
-                const d = new Date();
+            for (let i = actualDays - 1; i >= 0; i--) {
+                const d = new Date(today);
                 d.setDate(today.getDate() - i);
                 const dateKey = d.toLocaleDateString('en-CA');
-                const dayLabel = view === "7d"
+                const dayLabel = actualDays <= 7
                     ? DAY_LABELS[d.getDay() === 0 ? 6 : d.getDay() - 1]
                     : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 result.push({ date: dateKey, day: dayLabel, calories: calorieMap[dateKey] ?? 0 });

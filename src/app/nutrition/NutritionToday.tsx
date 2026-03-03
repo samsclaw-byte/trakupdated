@@ -185,8 +185,8 @@ export default function NutritionToday() {
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddMeal(); } }}
                     />
 
-                    <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none">
-                        <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div className="flex flex-wrap gap-2 flex-1">
                             <QuickAction label="Breakfast" icon={Coffee} isActive={selectedType === "Breakfast"} onClick={() => setSelectedType("Breakfast")} />
                             <QuickAction label="Lunch" icon={Pizza} isActive={selectedType === "Lunch"} onClick={() => setSelectedType("Lunch")} />
                             <QuickAction label="Dinner" icon={Drumstick} isActive={selectedType === "Dinner"} onClick={() => setSelectedType("Dinner")} />
@@ -195,7 +195,7 @@ export default function NutritionToday() {
                         <button
                             onClick={handleAddMeal}
                             disabled={!mealInput.trim() || isSubmitting}
-                            className="h-10 px-5 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
+                            className="h-10 px-5 w-full sm:w-auto bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
                         >
                             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add meal"}
                         </button>
