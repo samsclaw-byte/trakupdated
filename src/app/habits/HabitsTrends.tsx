@@ -64,11 +64,11 @@ export default function HabitsTrends() {
                 .single();
 
             const days = view === "7d" ? 7 : 28;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayDate = new Date(todayStr);
 
-            const chartStartDateStr = new Date();
-            chartStartDateStr.setDate(today.getDate() - (days - 1));
+            const chartStartDateStr = new Date(todayDate);
+            chartStartDateStr.setUTCDate(todayDate.getUTCDate() - (days - 1));
             let startStr = chartStartDateStr.toISOString().split('T')[0];
 
             if (firstLog && firstLog.date) {
@@ -93,12 +93,12 @@ export default function HabitsTrends() {
 
     // Build date range
     const days = view === "7d" ? 7 : 28;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayDate = new Date(todayStr);
 
-    const startStr = new Date();
-    startStr.setDate(today.getDate() - (days - 1));
-    let actualStartStr = startStr.toISOString().split('T')[0];
+    const startStrObj = new Date(todayDate);
+    startStrObj.setUTCDate(todayDate.getUTCDate() - (days - 1));
+    let actualStartStr = startStrObj.toISOString().split('T')[0];
 
     // We need to recreate the crop logic here synchronously since we can't await in render, 
     // but we can just use the earliest date from our `logs` state (which is already cropped by the DB query)
@@ -110,12 +110,12 @@ export default function HabitsTrends() {
     }
 
     const chartStartDate = new Date(actualStartStr);
-    const actualDays = Math.max(1, Math.floor((today.getTime() - chartStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    const actualDays = Math.max(1, Math.floor((todayDate.getTime() - chartStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
     const dateRange: string[] = [];
     for (let i = actualDays - 1; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
+        const d = new Date(todayDate);
+        d.setUTCDate(todayDate.getUTCDate() - i);
         dateRange.push(d.toISOString().split('T')[0]);
     }
 

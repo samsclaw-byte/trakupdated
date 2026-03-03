@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone } from "lucide-react";
+import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, User, Activity } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
@@ -113,31 +113,56 @@ export default function ProfileClient() {
                         {/* Stats & Goals */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Your Targets</h3>
-                            <div className="p-6 bg-emerald-gradient rounded-3xl text-brand-black flex flex-col items-center justify-center text-center space-y-4">
-                                <div className="space-y-1">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Daily Goal</h4>
-                                    <p className="text-4xl font-bold tracking-tighter">
-                                        {profile?.daily_calories.toLocaleString()} <span className="text-lg tracking-normal opacity-80">kcal</span>
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={handleEditProfile}
-                                    className="px-6 py-2.5 bg-brand-black text-brand-emerald font-bold rounded-2xl text-sm transition-transform active:scale-95 hover:bg-black w-full max-w-[200px]"
-                                >
-                                    Edit Body Profile
-                                </button>
+
+                            <div className="p-6 bg-emerald-gradient rounded-3xl text-brand-black flex flex-col items-center justify-center text-center space-y-2">
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Daily Goal</h4>
+                                <p className="text-4xl font-bold tracking-tighter">
+                                    {profile?.daily_calories.toLocaleString()} <span className="text-lg tracking-normal opacity-80">kcal</span>
+                                </p>
                             </div>
+
+                            {/* Biometric Scanner Button */}
+                            <button
+                                onClick={handleEditProfile}
+                                className="relative w-full overflow-hidden bg-white/5 border border-brand-emerald/20 rounded-3xl p-5 flex items-center justify-between group transition-all active:scale-[0.98] hover:bg-white/10 mt-2"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-brand-emerald/5 to-transparent pointer-events-none" />
+
+                                {/* Biometric Visual */}
+                                <div className="relative w-16 h-20 flex-shrink-0 flex items-center justify-center bg-black/40 rounded-xl border border-white/5 overflow-hidden">
+                                    {/* Tech Background Grid */}
+                                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '8px 8px' }} />
+
+                                    <User className="w-10 h-10 text-white/50" strokeWidth={1} />
+
+                                    {/* Scanning Laser Line */}
+                                    <motion.div
+                                        animate={{ top: ["0%", "100%", "0%"] }}
+                                        transition={{ duration: 3, ease: "linear", repeat: Infinity }}
+                                        className="absolute left-0 right-0 h-[2px] bg-brand-emerald shadow-[0_0_12px_rgba(52,211,153,1)] z-10"
+                                    />
+                                </div>
+
+                                <div className="text-right z-10 flex-1 pl-4">
+                                    <div className="flex items-center justify-end gap-1.5 mb-1.5 opacity-80">
+                                        <Activity className="w-3 h-3 text-brand-emerald" />
+                                        <span className="text-[9px] text-brand-emerald font-black uppercase tracking-[0.2em]">Biometric Sync</span>
+                                    </div>
+                                    <span className="text-lg font-bold text-white tracking-tight block leading-tight">Update Personal Metrics</span>
+                                    <span className="text-xs text-muted-foreground mt-1 block">Recalibrate targets & BMR</span>
+                                </div>
+                            </button>
                         </div>
 
                         {/* Settings List */}
                         <div className="space-y-4 pt-4">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Settings</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Settings (Placeholder)</h3>
                             <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden divide-y divide-white/5">
                                 <SettingsRow icon={Bell} label="Push Notifications" value="On" />
                                 <SettingsRow icon={HeartPulse} label="Apple Health Sync" value="Connected" />
                                 <SettingsRow icon={Moon} label="App Theme" value="Dark" />
                                 <SettingsRow icon={Shield} label="Privacy & Data" />
-                                <SettingsRow icon={Smartphone} label="App Version" value="v1.0.4" />
+                                <SettingsRow icon={Smartphone} label="App Version" value="Beta v1.01" />
                             </div>
                         </div>
 

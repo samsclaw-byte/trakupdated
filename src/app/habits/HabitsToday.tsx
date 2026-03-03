@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Pill, Zap, Droplets, Apple, Dumbbell,
-    Check, Plus, Sparkles
+    Check, Plus, Sparkles, Minus, X
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -48,6 +48,7 @@ interface HabitLog {
     habit_id: string;
     value: number;
     completed: boolean;
+    completed_at?: string | null;
     metadata: Record<string, unknown> | null;
 }
 
@@ -190,6 +191,51 @@ export default function HabitsToday() {
         }
     };
 
+    const handleDecrement = async (habit: HabitDefinition) => {
+        if (habit.track_type === 'exercise') return;
+
+        const supabase = supabaseRef.current;
+        const currentLog = logs[habit.id];
+
+        if (!currentLog || currentLog.value <= 0) return;
+
+        const newValue = Math.max(0, currentLog.value - habit.increment_by);
+        const isCompleted = newValue >= habit.target_value;
+
+        await supabase
+            .from('habit_logs')
+            .update({
+                value: newValue,
+                completed: isCompleted,
+                completed_at: isCompleted ? currentLog.completed_at : null,
+            })
+            .eq('id', currentLog.id);
+
+        setLogs(prev => ({
+            ...prev,
+            [habit.id]: {
+                ...prev[habit.id],
+                value: newValue,
+                completed: isCompleted,
+            }
+        }));
+    };
+
+    const handleDeleteHabit = async (habitId: string) => {
+        const confirmed = window.confirm("Are you sure you want to remove this habit?");
+        if (!confirmed) return;
+
+        const supabase = supabaseRef.current;
+
+        // Soft-delete so we don't break historical Trends data
+        await supabase
+            .from('habit_definitions')
+            .update({ is_active: false })
+            .eq('id', habitId);
+
+        setHabits(prev => prev.filter(h => h.id !== habitId));
+    };
+
     const handleExerciseLog = async (exerciseType: string, duration: number) => {
         const supabase = supabaseRef.current;
         const { data: { user } } = await supabase.auth.getUser();
@@ -321,7 +367,7 @@ export default function HabitsToday() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className={cn(
-                                    "relative flex items-center gap-4 p-5 rounded-3xl border transition-all duration-500",
+                                    "relative flex items-center gap-4 p-5 rounded-3xl border transition-all duration-500 group",
                                     isCompleted
                                         ? `bg-white/[0.03] ${colors.border} ${isCelebrating ? colors.glow : ''}`
                                         : "bg-white/5 border-white/5"
@@ -360,24 +406,48 @@ export default function HabitsToday() {
                                     )}
                                 </div>
 
+                                {/* Delete Button (Top Right Absolute) */}
+                                <button
+                                    onClick={() => handleDeleteHabit(habit.id)}
+                                    className="absolute top-2 right-2 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded-full transition-all text-white/30 hover:text-red-400"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+
                                 {/* Action Button */}
-                                {isCompleted ? (
-                                    <motion.div
+                                {isCompleted && habit.track_type !== 'count' ? (
+                                    <motion.button
+                                        whileTap={{ scale: 0.85 }}
+                                        onClick={() => handleDecrement(habit)}
                                         initial={isCelebrating ? { scale: 0, rotate: -180 } : { scale: 1, rotate: 0 }}
                                         animate={{ scale: 1, rotate: 0 }}
                                         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                        className={cn("w-12 h-12 rounded-full flex items-center justify-center", colors.solid)}
+                                        className={cn("w-12 h-12 rounded-full flex items-center justify-center cursor-pointer", colors.solid)}
                                     >
                                         <Check className={cn("w-5 h-5", colors.check)} />
-                                    </motion.div>
-                                ) : (
-                                    <motion.button
-                                        whileTap={{ scale: 0.85 }}
-                                        onClick={() => handleIncrement(habit)}
-                                        className="w-12 h-12 rounded-full bg-white/10 border border-white/10 flex items-center justify-center transition-all hover:bg-white/15 active:bg-white/20"
-                                    >
-                                        <Plus className="w-5 h-5" />
                                     </motion.button>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        {habit.track_type === 'count' && currentValue > 0 && (
+                                            <motion.button
+                                                whileTap={{ scale: 0.85 }}
+                                                onClick={() => handleDecrement(habit)}
+                                                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/15"
+                                            >
+                                                <Minus className="w-4 h-4 text-white/70" />
+                                            </motion.button>
+                                        )}
+                                        <motion.button
+                                            whileTap={{ scale: 0.85 }}
+                                            onClick={() => handleIncrement(habit)}
+                                            className={cn(
+                                                "w-12 h-12 rounded-full border flex items-center justify-center transition-all",
+                                                isCompleted ? `${colors.solid} border-transparent` : "bg-white/10 border-white/10 hover:bg-white/15 active:bg-white/20"
+                                            )}
+                                        >
+                                            {isCompleted ? <Check className={colors.check} /> : <Plus className="w-5 h-5" />}
+                                        </motion.button>
+                                    </div>
                                 )}
 
                                 {/* Celebration particles */}

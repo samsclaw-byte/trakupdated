@@ -222,7 +222,7 @@ export default function AddHabitModal({ isOpen, onClose, onCreated }: AddHabitMo
                                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 outline-none text-center" />
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <label className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Step</label>
+                                                        <label className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Increment</label>
                                                         <input type="number" value={incrementBy} onChange={e => setIncrementBy(Number(e.target.value))}
                                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 outline-none text-center" />
                                                     </div>
@@ -233,7 +233,7 @@ export default function AddHabitModal({ isOpen, onClose, onCreated }: AddHabitMo
                                         <button
                                             onClick={() => setStep(2)}
                                             disabled={!name.trim()}
-                                            className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-white/15 disabled:opacity-30"
+                                            className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center gap-2 transition-all hover:brightness-110 disabled:opacity-30 disabled:bg-white/10 disabled:text-white"
                                         >
                                             Next <ChevronRight className="w-4 h-4" />
                                         </button>
@@ -269,7 +269,7 @@ export default function AddHabitModal({ isOpen, onClose, onCreated }: AddHabitMo
                                         </div>
                                         <button
                                             onClick={() => setStep(3)}
-                                            className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-white/15"
+                                            className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center gap-2 transition-all hover:brightness-110"
                                         >
                                             Next <ChevronRight className="w-4 h-4" />
                                         </button>

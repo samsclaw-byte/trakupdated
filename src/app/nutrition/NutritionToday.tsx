@@ -260,7 +260,7 @@ export default function NutritionToday() {
                                             </div>
                                             <button
                                                 onClick={() => handleDeleteMeal(meal.id)}
-                                                className="w-8 h-8 rounded-xl bg-white/0 hover:bg-red-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                                                className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 flex items-center justify-center transition-all ml-2"
                                                 title="Delete meal"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-400 transition-colors" />
