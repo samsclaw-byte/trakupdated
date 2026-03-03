@@ -55,7 +55,7 @@ export default function ShakeBuilder() {
         <div className="flex flex-col min-h-screen bg-background pb-12">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-6 sticky top-0 bg-background/80 backdrop-blur-xl z-50">
-                <Link href="/dashboard">
+                <Link href="/nutrition">
                     <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 border border-white/5 active:scale-90 transition-transform">
                         <ChevronLeft className="w-5 h-5" />
                     </button>

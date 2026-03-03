@@ -22,7 +22,7 @@ export async function GET(request: Request) {
             const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
             const isLocalEnv = process.env.NODE_ENV === 'development'
 
-            const destination = isNewUser ? '/setup' : '/dashboard'
+            const destination = isNewUser ? '/setup' : '/nutrition'
 
             if (isLocalEnv) {
                 // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host

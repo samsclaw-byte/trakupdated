@@ -33,6 +33,13 @@ export async function updateSession(request: NextRequest) {
             data: { user },
         } = await supabase.auth.getUser()
 
+        // Redirect old routes to new structure
+        if (request.nextUrl.pathname === '/dashboard' || request.nextUrl.pathname === '/trends') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/nutrition'
+            return NextResponse.redirect(url)
+        }
+
         // Protect routes here. If unauthenticated, redirect to '/' unless it's a public route.
         if (
             !user &&
@@ -44,10 +51,10 @@ export async function updateSession(request: NextRequest) {
             return NextResponse.redirect(url)
         }
 
-        // If user exists and tries to access home page, redirect to dashboard
+        // If user exists and tries to access home page, redirect to nutrition
         if (user && request.nextUrl.pathname === '/') {
             const url = request.nextUrl.clone()
-            url.pathname = '/dashboard'
+            url.pathname = '/nutrition'
             return NextResponse.redirect(url)
         }
 
