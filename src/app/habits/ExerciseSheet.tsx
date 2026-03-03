@@ -50,7 +50,7 @@ export default function ExerciseSheet({ isOpen, onClose, onLog }: ExerciseSheetP
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
                     />
 
                     {/* Sheet */}
@@ -59,14 +59,14 @@ export default function ExerciseSheet({ isOpen, onClose, onLog }: ExerciseSheetP
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-white/5 rounded-t-3xl overflow-hidden"
+                        className="fixed bottom-0 left-0 right-0 z-[60] bg-card border-t border-white/5 rounded-t-3xl overflow-hidden shadow-2xl"
                     >
                         {/* Drag handle */}
                         <div className="flex justify-center py-3">
                             <div className="w-10 h-1 bg-white/20 rounded-full" />
                         </div>
 
-                        <div className="px-6 pb-10 space-y-8">
+                        <div className="px-6 pb-12 space-y-8">
                             {/* Header */}
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-bold">Log Exercise</h3>
@@ -80,7 +80,7 @@ export default function ExerciseSheet({ isOpen, onClose, onLog }: ExerciseSheetP
 
                             {/* Exercise Type Picker */}
                             <div className="space-y-4">
-                                <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
+                                <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 pt-3 px-1 relative">
                                     {EXERCISE_TYPES.map((type) => {
                                         const isActive = selectedType === type.id;
                                         return (
