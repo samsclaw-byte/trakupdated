@@ -11,6 +11,7 @@ create table public.users (
   activity_level numeric,
   bmr numeric,
   daily_calories numeric,
+  member_number serial,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

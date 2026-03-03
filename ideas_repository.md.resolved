@@ -1,0 +1,46 @@
+# trak Ideas Repository
+
+This document serves as a living repository for design ideas, feature concepts, and overall product vision for the *trak* application.
+
+## 🧠 Conceptual Mindmap
+
+```mermaid
+mindmap
+  root((trak))
+    Gamification & Prestige
+      Initial Badge System
+        Prestige Member Numbers (Baggy Green style)
+        Initials-based Identity
+      Progressive Milestones
+        Nutrition Logging Streaks
+        Habit Consistency Tiers
+        Visual UI Upgrades (e.g. Glowing Badge Rims)
+    Profile & User Identity
+      Private & Focused
+      Metric Recalibration Workflows
+      Exclusivity feel (Member Since x)
+    Analytics & Performance
+      Habit vs. Nutrition correlation
+      Weekly Performance Summaries
+      AI-driven Insights
+    Social & Community (Future)
+      Leaderboards (Optional/Opt-in)
+      Accountability Pods
+```
+
+## 💡 Feature Backlog & Ideas
+
+### 1. The "Baggy Green" Prestige Badge
+- **Concept:** Every user receives a sequential member number upon registration (e.g., `#0001`, `#0042`).
+- **Goal:** Create a sense of early-adopter exclusivity and long-term prestige. Similar to the Australian cricket team's baggy green cap.
+- **Execution:** Instead of regular photo avatars, the user's identity is represented by a highly polished "Badge" displaying their Initials and their unique Member Number. 
+- **Future Expansion:** The badge's appearance (border, color, glow, material) evolves based on user streaks and consistency in both nutrition and habit tracking.
+
+### 2. Profile Page Overhaul
+- **Adjusting Inputs:** Replace generic "Recalculate BMR" with more engaging terminology like:
+  - *"Update Health Metrics"*
+  - *"Recalibrate Targets"*
+  - *"Edit Body Profile"*
+- **Placeholder Settings:** Keep the UI looking full and premium by including iOS-style setting rows (e.g., Push Notifications, Apple Health Integration) but deliberately making them read-only/non-clickable placeholders for now to hint at future capabilities.
+
+*(Note: We will continuously integrate key points from external brainstorms (like Grok) into this file as they are solidified.)*
