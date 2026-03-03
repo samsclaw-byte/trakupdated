@@ -192,15 +192,23 @@ export default function HabitsToday() {
     };
 
     const handleDecrement = async (habit: HabitDefinition) => {
-        if (habit.track_type === 'exercise') return;
-
         const supabase = supabaseRef.current;
         const currentLog = logs[habit.id];
 
         if (!currentLog || currentLog.value <= 0) return;
 
-        const newValue = Math.max(0, currentLog.value - habit.increment_by);
-        const isCompleted = newValue >= habit.target_value;
+        let newValue = 0;
+        let isCompleted = false;
+        let newMetadata = currentLog.metadata;
+
+        if (habit.track_type === 'exercise') {
+            newValue = 0;
+            isCompleted = false;
+            newMetadata = null;
+        } else {
+            newValue = Math.max(0, currentLog.value - habit.increment_by);
+            isCompleted = newValue >= habit.target_value;
+        }
 
         await supabase
             .from('habit_logs')
@@ -208,6 +216,7 @@ export default function HabitsToday() {
                 value: newValue,
                 completed: isCompleted,
                 completed_at: isCompleted ? currentLog.completed_at : null,
+                metadata: newMetadata,
             })
             .eq('id', currentLog.id);
 
@@ -217,6 +226,7 @@ export default function HabitsToday() {
                 ...prev[habit.id],
                 value: newValue,
                 completed: isCompleted,
+                metadata: newMetadata,
             }
         }));
     };
@@ -409,9 +419,10 @@ export default function HabitsToday() {
                                 {/* Delete Button (Top Right Absolute) */}
                                 <button
                                     onClick={() => handleDeleteHabit(habit.id)}
-                                    className="absolute top-2 right-2 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded-full transition-all text-white/30 hover:text-red-400"
+                                    className="absolute -top-2 -right-2 p-1.5 bg-background border border-white/10 hover:border-red-500/30 hover:bg-red-500/10 rounded-full transition-all text-white/40 hover:text-red-400 z-10 shadow-sm"
+                                    title="Remove this habit"
                                 >
-                                    <X className="w-3 h-3" />
+                                    <X className="w-3.5 h-3.5" />
                                 </button>
 
                                 {/* Action Button */}
@@ -422,9 +433,13 @@ export default function HabitsToday() {
                                         initial={isCelebrating ? { scale: 0, rotate: -180 } : { scale: 1, rotate: 0 }}
                                         animate={{ scale: 1, rotate: 0 }}
                                         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                        className={cn("w-12 h-12 rounded-full flex items-center justify-center cursor-pointer", colors.solid)}
+                                        className={cn("w-12 h-12 rounded-full flex items-center justify-center cursor-pointer relative", colors.solid)}
                                     >
                                         <Check className={cn("w-5 h-5", colors.check)} />
+                                        {/* Minimal minus indicator for undo */}
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full border border-white/10 flex items-center justify-center shadow-lg">
+                                            <Minus className="w-3 h-3 text-muted-foreground" />
+                                        </div>
                                     </motion.button>
                                 ) : (
                                     <div className="flex items-center gap-2">
