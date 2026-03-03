@@ -117,14 +117,18 @@ export default function HabitsToday() {
         setIsLoading(false);
     }, []);
 
-    useEffect(() => { loadData(); }, [loadData]);
+    useEffect(() => {
+        const timer = setTimeout(() => loadData(), 0);
+        return () => clearTimeout(timer);
+    }, [loadData]);
 
     // Check if all habits are done
     useEffect(() => {
         if (habits.length > 0) {
             const allCompleted = habits.every(h => logs[h.id]?.completed);
             if (allCompleted && Object.keys(logs).length > 0) {
-                setAllDone(true);
+                const timer = setTimeout(() => setAllDone(true), 0);
+                return () => clearTimeout(timer);
             }
         }
     }, [logs, habits]);

@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ interface Meal {
     text_entry: string;
     calories: number;
     protein: number;
+    carbs: number;
     fat: number;
     fibre: number;
     sugar: number;
@@ -92,13 +93,34 @@ export default function NutritionToday() {
         }
     };
 
+    const handleDeleteMeal = async (mealId: string) => {
+        const supabase = supabaseRef.current;
+        setMeals(prev => prev.filter(m => m.id !== mealId));
+        const { error } = await supabase.from('meals').delete().eq('id', mealId);
+        if (error) {
+            console.error('Error deleting meal:', error);
+            // Refetch on failure
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const { data } = await supabase.from('meals').select('*').eq('user_id', user.id).gte('created_at', today.toISOString()).order('created_at', { ascending: false });
+                if (data) setMeals(data);
+            }
+        }
+    };
+
     const goal = profile?.daily_calories ?? 2400;
     const proteinTarget = profile?.weight ? Math.round(profile.weight * 1.8) : 180;
+    const carbsTarget = goal ? Math.round((goal * 0.45) / 4) : 270;
     const fatTarget = goal ? Math.round((goal * 0.25) / 9) : 80;
+    const fibreTarget = 30;
 
     const consumed = meals.reduce((sum, meal) => sum + (Number(meal.calories) || 0), 0);
     const proteinConsumed = meals.reduce((sum, meal) => sum + (Number(meal.protein) || 0), 0);
+    const carbsConsumed = meals.reduce((sum, meal) => sum + (Number(meal.carbs) || 0), 0);
     const fatConsumed = meals.reduce((sum, meal) => sum + (Number(meal.fat) || 0), 0);
+    const fibreConsumed = meals.reduce((sum, meal) => sum + (Number(meal.fibre) || 0), 0);
     const percentage = Math.min((consumed / goal) * 100, 100);
 
     return (
@@ -108,12 +130,12 @@ export default function NutritionToday() {
                 {isLoading ? (
                     <div className="flex flex-col items-center gap-12 w-full">
                         <div className="w-64 h-64 rounded-full bg-white/5 animate-pulse" />
-                        <div className="grid grid-cols-3 w-full max-w-sm gap-4">
-                            {[1, 2, 3].map(i => (
+                        <div className="grid grid-cols-5 w-full max-w-md gap-2">
+                            {[1, 2, 3, 4, 5].map(i => (
                                 <div key={i} className="flex flex-col items-center gap-2">
-                                    <div className="h-3 w-12 bg-white/5 rounded animate-pulse" />
-                                    <div className="h-5 w-10 bg-white/5 rounded animate-pulse" />
-                                    <div className="h-1 w-12 bg-white/5 rounded animate-pulse" />
+                                    <div className="h-3 w-10 bg-white/5 rounded animate-pulse" />
+                                    <div className="h-5 w-8 bg-white/5 rounded animate-pulse" />
+                                    <div className="h-1 w-10 bg-white/5 rounded animate-pulse" />
                                 </div>
                             ))}
                         </div>
@@ -139,9 +161,11 @@ export default function NutritionToday() {
                                 <span className="text-muted-foreground text-xs uppercase tracking-[0.2em] font-medium">kcal of {goal}</span>
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 w-full max-w-sm mt-12 gap-4">
+                        <div className="grid grid-cols-5 w-full max-w-md mt-12 gap-2">
                             <StatsCard label="Protein" value={`${proteinConsumed}g`} progress={(proteinConsumed / proteinTarget) * 100} />
+                            <StatsCard label="Carbs" value={`${carbsConsumed}g`} progress={(carbsConsumed / carbsTarget) * 100} />
                             <StatsCard label="Fat" value={`${fatConsumed}g`} progress={(fatConsumed / fatTarget) * 100} />
+                            <StatsCard label="Fibre" value={`${fibreConsumed}g`} progress={(fibreConsumed / fibreTarget) * 100} />
                             <StatsCard label="Meals" value={`${meals.length}`} progress={100} />
                         </div>
                     </>
@@ -197,35 +221,49 @@ export default function NutritionToday() {
                             <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold">No meals logged yet today.</p>
                         </div>
                     ) : (
-                        meals.map((meal) => {
-                            let MealIcon = Apple;
-                            if (meal.meal_type === 'Breakfast') MealIcon = Coffee;
-                            if (meal.meal_type === 'Lunch') MealIcon = Pizza;
-                            if (meal.meal_type === 'Dinner') MealIcon = Drumstick;
-                            const timeStr = new Date(meal.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                            return (
-                                <motion.div key={meal.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                                    className="flex items-center justify-between p-5 bg-white/5 border border-white/5 rounded-3xl group transition-all hover:bg-white/[0.08]">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-brand-emerald/10 transition-colors">
-                                            <MealIcon className="w-5 h-5 text-muted-foreground group-hover:text-brand-emerald transition-colors" />
+                        <AnimatePresence>
+                            {meals.map((meal) => {
+                                let MealIcon = Apple;
+                                if (meal.meal_type === 'Breakfast') MealIcon = Coffee;
+                                if (meal.meal_type === 'Lunch') MealIcon = Pizza;
+                                if (meal.meal_type === 'Dinner') MealIcon = Drumstick;
+                                const timeStr = new Date(meal.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                                return (
+                                    <motion.div key={meal.id}
+                                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -200, height: 0, marginBottom: 0, padding: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="flex items-center justify-between p-5 bg-white/5 border border-white/5 rounded-3xl group transition-all hover:bg-white/[0.08]">
+                                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                                            <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-brand-emerald/10 transition-colors flex-shrink-0">
+                                                <MealIcon className="w-5 h-5 text-muted-foreground group-hover:text-brand-emerald transition-colors" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="font-semibold text-foreground/90 capitalize truncate">
+                                                    {meal.text_entry.substring(0, 25)}{meal.text_entry.length > 25 ? '...' : ''}
+                                                </h4>
+                                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                                                    P: {meal.protein || 0}g • C: {meal.carbs || 0}g • F: {meal.fat || 0}g • Fi: {meal.fibre || 0}g • S: {meal.sugar || 0}g
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-semibold text-foreground/90 capitalize">
-                                                {meal.text_entry.substring(0, 25)}{meal.text_entry.length > 25 ? '...' : ''}
-                                            </h4>
-                                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                                                P: {meal.protein || 0}g • F: {meal.fat || 0}g • FIBRE: {meal.fibre || 0}g
-                                            </p>
+                                        <div className="flex items-center gap-3 flex-shrink-0 pl-4">
+                                            <div className="text-right">
+                                                <span className="text-lg font-bold">+{meal.calories}</span>
+                                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter text-right">{timeStr}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteMeal(meal.id)}
+                                                className="w-8 h-8 rounded-xl bg-white/0 hover:bg-red-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                                                title="Delete meal"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-400 transition-colors" />
+                                            </button>
                                         </div>
-                                    </div>
-                                    <div className="text-right flex-shrink-0 pl-4">
-                                        <span className="text-lg font-bold">+{meal.calories}</span>
-                                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter text-right">{timeStr}</p>
-                                    </div>
-                                </motion.div>
-                            );
-                        })
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
                     )}
                 </div>
             </div>

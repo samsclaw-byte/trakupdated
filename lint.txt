@@ -1,0 +1,50 @@
+
+> trak@0.1.0 lint C:\Users\samcu\.gemini\antigravity\scratch\trak
+> eslint
+
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\.vercel\output\functions\_not-found.func\___next_launcher.cjs
+  11:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  46:18  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\.vercel\output\functions\api\parse-meal.func\___next_launcher.cjs
+  11:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  46:18  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\app\habits\HabitsToday.tsx
+  120:23  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\app\habits\HabitsToday.tsx:120:23
+  118 |     }, []);
+  119 |
+> 120 |     useEffect(() => { loadData(); }, [loadData]);
+      |                       ^^^^^^^^ Avoid calling setState() directly within an effect
+  121 |
+  122 |     // Check if all habits are done
+  123 |     useEffect(() => {                                                                                                   react-hooks/set-state-in-effect
+  127:17  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\app\habits\HabitsToday.tsx:127:17
+  125 |             const allCompleted = habits.every(h => logs[h.id]?.completed);
+  126 |             if (allCompleted && Object.keys(logs).length > 0) {
+> 127 |                 setAllDone(true);
+      |                 ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  128 |             }
+  129 |         }
+  130 |     }, [logs, habits]);  react-hooks/set-state-in-effect
+
+✖ 6 problems (6 errors, 0 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.

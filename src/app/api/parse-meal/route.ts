@@ -21,7 +21,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Meal description too long (max 500 characters)" }, { status: 400 });
         }
 
-        // 2. Call Moonshot AI Kimi 2.5
+        // 2. Call Moonshot AI Kimi 2.5 (with 15s timeout)
         const apiKey = process.env.MOONSHOT_API_KEY;
         if (!apiKey) {
             throw new Error("Missing MOONSHOT_API_KEY");
@@ -34,31 +34,48 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
 {
   "calories": number,
   "protein": number,
+  "carbs": number,
   "fat": number,
   "fibre": number,
   "sugar": number
 }`;
 
-        const moonshotRes = await fetch("https://api.moonshot.cn/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: "moonshot-v1-8k",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: mealText },
-                ],
-                temperature: 0.1,
-            }),
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+
+        let moonshotRes;
+        try {
+            moonshotRes = await fetch("https://api.moonshot.ai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: "moonshot-v1-8k",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: mealText },
+                    ],
+                    temperature: 0.1,
+                }),
+                signal: controller.signal,
+            });
+        } catch (fetchErr) {
+            clearTimeout(timeout);
+            const isTimeout = fetchErr instanceof DOMException && fetchErr.name === 'AbortError';
+            console.error("Moonshot fetch failed:", isTimeout ? "TIMEOUT (15s)" : fetchErr);
+            throw new Error(isTimeout
+                ? "Moonshot AI is unreachable (timeout). The service may be down or blocked from your network."
+                : `Failed to connect to Moonshot AI: ${fetchErr}`);
+        }
+        clearTimeout(timeout);
 
         if (!moonshotRes.ok) {
             const errText = await moonshotRes.text();
-            console.error("Moonshot API Error:", errText);
-            throw new Error("Failed to parse meal with AI.");
+            console.error("Moonshot API Error Status:", moonshotRes.status);
+            console.error("Moonshot API Error Body:", errText);
+            throw new Error(`Moonshot AI returned ${moonshotRes.status}: ${errText}`);
         }
 
         const moonshotData = await moonshotRes.json();
@@ -82,6 +99,7 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
                 text_entry: mealText,
                 calories: parsedMacros.calories,
                 protein: parsedMacros.protein,
+                carbs: parsedMacros.carbs,
                 fat: parsedMacros.fat,
                 fibre: parsedMacros.fibre,
                 sugar: parsedMacros.sugar,

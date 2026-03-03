@@ -37,6 +37,7 @@ create table public.meals (
   text_entry text not null,
   calories numeric,
   protein numeric,
+  carbs numeric,
   fat numeric,
   fibre numeric,
   sugar numeric,
