@@ -21,7 +21,7 @@ export default function LoadingCalcPage() {
             setIndex((prev) => {
                 if (prev === calculationQuotes.length - 1) {
                     clearInterval(timer);
-                    setTimeout(() => router.push("/nutrition"), 2500);
+                    setTimeout(() => router.push("/calibration-complete"), 2500);
                     return prev;
                 }
                 return prev + 1;
