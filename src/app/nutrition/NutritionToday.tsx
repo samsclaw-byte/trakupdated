@@ -5,6 +5,7 @@ import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { logSquadEvent } from "@/utils/squads";
 
 interface Meal {
     id: string;
@@ -84,6 +85,16 @@ export default function NutritionToday() {
             if (!res.ok) throw new Error("Failed to parse meal");
             const newMeal = await res.json();
             setMeals(prev => [newMeal, ...prev]);
+
+            const newConsumed = consumed + (Number(newMeal.calories) || 0);
+            if (consumed < goal * 0.9 && newConsumed >= goal * 0.9 && newConsumed <= goal + 150) {
+                const supabase = supabaseRef.current;
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    logSquadEvent(user.id, 'calorie_target_hit', { calories: newConsumed });
+                }
+            }
+
             setMealInput("");
         } catch (error) {
             console.error("Error adding meal:", error);

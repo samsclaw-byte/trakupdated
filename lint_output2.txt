@@ -1,0 +1,90 @@
+
+> trak@0.1.0 lint C:\Users\samcu\.gemini\antigravity\scratch\trak
+> eslint
+
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\.vercel\output\functions\_not-found.func\___next_launcher.cjs
+  11:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  46:18  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\.vercel\output\functions\api\parse-meal.func\___next_launcher.cjs
+  11:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  46:18  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\app\calibration-complete\page.tsx
+  8:10  warning  'cn' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\app\squads\page.tsx
+  324:66  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\components\squads\EmojiReactionBar.tsx
+   35:20  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\components\squads\EmojiReactionBar.tsx:35:20
+  33 |
+  34 |     const triggerFloatAnimation = (emoji: string) => {
+> 35 |         const id = Date.now() + Math.random();
+     |                    ^^^^^^^^^^ Cannot call impure function
+  36 |         // random offset between -20px and +20px
+  37 |         const xOffset = (Math.random() - 0.5) * 40;
+  38 |         setFloatingEmojis(prev => [...prev, { id, emoji, xOffset }]);                                                                                                                                                                                                                                                         react-hooks/purity
+   35:33  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\components\squads\EmojiReactionBar.tsx:35:33
+  33 |
+  34 |     const triggerFloatAnimation = (emoji: string) => {
+> 35 |         const id = Date.now() + Math.random();
+     |                                 ^^^^^^^^^^^^^ Cannot call impure function
+  36 |         // random offset between -20px and +20px
+  37 |         const xOffset = (Math.random() - 0.5) * 40;
+  38 |         setFloatingEmojis(prev => [...prev, { id, emoji, xOffset }]);                                                                                                                                                                                                                                      react-hooks/purity
+   37:26  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\components\squads\EmojiReactionBar.tsx:37:26
+  35 |         const id = Date.now() + Math.random();
+  36 |         // random offset between -20px and +20px
+> 37 |         const xOffset = (Math.random() - 0.5) * 40;
+     |                          ^^^^^^^^^^^^^ Cannot call impure function
+  38 |         setFloatingEmojis(prev => [...prev, { id, emoji, xOffset }]);
+  39 |
+  40 |         // Remove after animation (1.5s is safe for a 1s animation)                                                                                                                                                                                                                                react-hooks/purity
+   59:36  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\components\squads\EmojiReactionBar.tsx:59:36
+  57 |         } else {
+  58 |             // Add it
+> 59 |             const tempId = `temp-${Date.now()}`;
+     |                                    ^^^^^^^^^^ Cannot call impure function
+  60 |             setReactions(prev => [...prev, { id: tempId, emoji, user_id: currentUserId }]);
+  61 |             triggerFloatAnimation(emoji);
+  62 |                                                                                                                                                                                                                                                                                            react-hooks/purity
+  103:79  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\components\squads\EmojiReactionBar.tsx:103:79
+  101 |                             key={anim.id}
+  102 |                             initial={{ opacity: 1, y: 0, x: anim.xOffset, scale: 0.5 }}
+> 103 |                             animate={{ opacity: 0, y: -60, x: anim.xOffset + (Math.random() - 0.5) * 20, scale: 1.5 }}
+      |                                                                               ^^^^^^^^^^^^^ Cannot call impure function
+  104 |                             exit={{ opacity: 0 }}
+  105 |                             transition={{ duration: 1, ease: "easeOut" }}
+  106 |                             className="absolute bottom-0 left-8 text-2xl"  react-hooks/purity
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\components\squads\FeedCard.tsx
+  10:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\utils\squads.ts
+  5:90  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 13 problems (12 errors, 1 warning)
+
+ ELIFECYCLE  Command failed with exit code 1.

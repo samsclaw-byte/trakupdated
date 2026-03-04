@@ -10,6 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import ExerciseSheet from "./ExerciseSheet";
 import AddHabitModal from "./AddHabitModal";
+import { logSquadEvent } from "@/utils/squads";
 
 // Icon mapping
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -188,6 +189,14 @@ export default function HabitsToday() {
         if (isCompleted && !currentLog?.completed) {
             setCelebratingId(habit.id);
             setTimeout(() => setCelebratingId(null), 1200);
+            logSquadEvent(user.id, 'habit_completed', { habit_name: habit.name });
+
+            // Check if this was the last habit to make a perfect day
+            const otherHabits = habits.filter(h => h.id !== habit.id);
+            const othersCompleted = otherHabits.every(h => logs[h.id]?.completed);
+            if (othersCompleted) {
+                logSquadEvent(user.id, 'perfect_day', {});
+            }
         }
     };
 
@@ -294,6 +303,16 @@ export default function HabitsToday() {
         setCelebratingId(exerciseHabit.id);
         setTimeout(() => setCelebratingId(null), 1200);
         setShowExercise(false);
+
+        if (!currentLog?.completed) {
+            logSquadEvent(user.id, 'habit_completed', { habit_name: `${exerciseType} (${duration}m)` });
+
+            const otherHabits = habits.filter(h => h.id !== exerciseHabit.id);
+            const othersCompleted = otherHabits.every(h => logs[h.id]?.completed);
+            if (othersCompleted) {
+                logSquadEvent(user.id, 'perfect_day');
+            }
+        }
     };
 
     const completedCount = habits.filter(h => logs[h.id]?.completed).length;
