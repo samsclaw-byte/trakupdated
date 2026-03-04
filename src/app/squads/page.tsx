@@ -24,6 +24,17 @@ interface LeaderboardMember {
     reactions_given: number;
 }
 
+interface SquadMember {
+    user_id: string;
+    role: string;
+    joined_at: string;
+    users: {
+        name: string;
+        member_number: number | null;
+        created_at: string;
+    };
+}
+
 export default function SquadsPage() {
     const supabase = createClient();
 
@@ -39,9 +50,10 @@ export default function SquadsPage() {
     const [isActionLoading, setIsActionLoading] = useState(false);
 
     // Dashboard State
-    const [activeTab, setActiveTab] = useState<'feed' | 'leaderboard'>('feed');
+    const [activeTab, setActiveTab] = useState<'feed' | 'leaderboard' | 'members'>('feed');
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
+    const [squadMembers, setSquadMembers] = useState<SquadMember[]>([]);
     const [isDataLoading, setIsDataLoading] = useState(false);
 
     const fetchSquads = useCallback(async () => {
@@ -84,7 +96,7 @@ export default function SquadsPage() {
                 .limit(50);
 
             if (data) setFeedItems(data as unknown as FeedItem[]);
-        } else {
+        } else if (activeTab === 'leaderboard') {
             // Leaderboard (Current week Mon-Sun)
             const today = new Date();
             const day = today.getDay();
@@ -98,6 +110,18 @@ export default function SquadsPage() {
                 end_date: endOfWeek
             });
             if (data) setLeaderboard(data);
+        } else if (activeTab === 'members') {
+            const { data } = await supabase
+                .from('squad_members')
+                .select(`
+                    user_id, role, joined_at,
+                    users ( name, member_number, created_at )
+                `)
+                .eq('squad_id', squadId)
+                .order('role', { ascending: true }) // 'admin' comes before 'member'
+                .order('joined_at', { ascending: true });
+
+            if (data) setSquadMembers(data as unknown as SquadMember[]);
         }
         setIsDataLoading(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,7 +132,6 @@ export default function SquadsPage() {
             fetchDashboardData(squads[0].id);
         }
     }, [squads, activeTab, fetchDashboardData]);
-
 
     const generateJoinCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -278,7 +301,6 @@ export default function SquadsPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-brand-black text-white pb-32">
-
             {/* Header */}
             <div className="px-6 pt-12 pb-4 border-b border-white/5 sticky top-0 bg-brand-black/90 backdrop-blur-xl z-40">
                 <div className="flex items-center justify-between mb-4">
@@ -302,6 +324,12 @@ export default function SquadsPage() {
                     >
                         <Trophy className="w-4 h-4" /> Leaderboard
                     </button>
+                    <button
+                        onClick={() => setActiveTab('members')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'members' ? 'bg-white/10 text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                        <Users className="w-4 h-4" /> Members
+                    </button>
                 </div>
             </div>
 
@@ -324,7 +352,7 @@ export default function SquadsPage() {
                             <p className="text-sm font-medium">It&apos;s quiet here. Complete a habit to start the feed!</p>
                         </div>
                     )
-                ) : (
+                ) : activeTab === 'leaderboard' ? (
                     leaderboard.length > 0 ? (
                         <div className="flex flex-col gap-3">
                             <div className="flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -360,6 +388,51 @@ export default function SquadsPage() {
                             <p className="text-sm font-medium">Leaderboard calculates at the end of the day.</p>
                         </div>
                     )
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        {squadMembers.map((member, index) => {
+                            const name = member.users?.name || 'User';
+                            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            const joinedDate = new Date(member.users?.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                            const memberNum = member.users?.member_number?.toString().padStart(4, '0') || "0042";
+
+                            return (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}
+                                    key={member.user_id}
+                                    className="relative w-full h-28 bg-white/5 rounded-3xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-between px-8"
+                                >
+                                    {/* Glass shine effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
+                                    {member.role === 'admin' && (
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl mix-blend-screen pointer-events-none" />
+                                    )}
+
+                                    <div className="space-y-1 relative z-10 w-full">
+                                        <div className="flex items-center justify-between w-full">
+                                            <h2 className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white to-white/50">
+                                                {initials}
+                                            </h2>
+                                            <div className="text-right">
+                                                <div className="flex items-center justify-end gap-2 mb-1">
+                                                    {member.role === 'admin' && (
+                                                        <span className="text-[9px] px-2 py-0.5 rounded-sm bg-amber-500/20 text-amber-500 uppercase tracking-widest font-black">Admin</span>
+                                                    )}
+                                                    <p className="text-[10px] text-brand-emerald uppercase tracking-widest font-bold">trak Member</p>
+                                                </div>
+                                                <p className="text-xl font-serif italic text-white/80 tracking-widest">
+                                                    No. {memberNum}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold whitespace-nowrap overflow-hidden text-ellipsis">
+                                            {name} • Since {joinedDate}
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
 
