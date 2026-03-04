@@ -69,7 +69,7 @@ export function FeedCard({ item, currentUserId }: FeedCardProps) {
                     </div>
                     <div>
                         <p className="font-semibold text-white">
-                            {item.users.name} <span className="text-muted-foreground font-normal">{narrative}</span>
+                            {item.users?.name || 'A squad member'} <span className="text-muted-foreground font-normal">{narrative}</span>
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">{timeAgo}</p>
                     </div>
