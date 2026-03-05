@@ -143,10 +143,14 @@ export default function NutritionTrends() {
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Avg Daily Calories</p>
                     </div>
                     {avgCalories > 0 && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-emerald/10 rounded-full">
-                            <TrendingUp className="w-3 h-3 text-brand-emerald" />
-                            <span className="text-[10px] font-bold text-brand-emerald">
-                                {Math.round((avgCalories / goal) * 100)}% of goal
+                        <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+                            avgCalories > goal ? "bg-red-500/10" : "bg-brand-emerald/10"
+                        )}>
+                            <TrendingUp className={cn("w-3 h-3", avgCalories > goal ? "text-red-500" : "text-brand-emerald")} />
+                            <span className={cn("text-[10px] font-bold", avgCalories > goal ? "text-red-500" : "text-brand-emerald")}>
+                                {avgCalories > goal
+                                    ? `${Math.round(((avgCalories - goal) / goal) * 100)}% over target`
+                                    : `${Math.round(((goal - avgCalories) / goal) * 100)}% under target`}
                             </span>
                         </div>
                     )}

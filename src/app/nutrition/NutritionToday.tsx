@@ -172,10 +172,10 @@ export default function NutritionToday() {
     const fibreTarget = 30;
 
     const consumed = meals.reduce((sum, meal) => sum + (Number(meal.calories) || 0), 0);
-    const proteinConsumed = meals.reduce((sum, meal) => sum + (Number(meal.protein) || 0), 0);
-    const carbsConsumed = meals.reduce((sum, meal) => sum + (Number(meal.carbs) || 0), 0);
-    const fatConsumed = meals.reduce((sum, meal) => sum + (Number(meal.fat) || 0), 0);
-    const fibreConsumed = meals.reduce((sum, meal) => sum + (Number(meal.fibre) || 0), 0);
+    const proteinConsumed = Math.round(meals.reduce((sum, meal) => sum + (Number(meal.protein) || 0), 0));
+    const carbsConsumed = Math.round(meals.reduce((sum, meal) => sum + (Number(meal.carbs) || 0), 0));
+    const fatConsumed = Math.round(meals.reduce((sum, meal) => sum + (Number(meal.fat) || 0), 0));
+    const fibreConsumed = Math.round(meals.reduce((sum, meal) => sum + (Number(meal.fibre) || 0), 0));
     const percentage = Math.min((consumed / goal) * 100, 100);
 
     return (
@@ -311,11 +311,11 @@ export default function NutritionToday() {
                                                     {meal.text_entry.substring(0, 25)}{meal.text_entry.length > 25 ? '...' : ''}
                                                 </h4>
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1 w-full max-w-[150px]">
-                                                    <span className="w-[50px]">P: {meal.protein || 0}g</span>
-                                                    <span className="w-[50px]">C: {meal.carbs || 0}g</span>
-                                                    <span className="w-[50px]">F: {meal.fat || 0}g</span>
-                                                    <span className="w-[50px]">Fi: {meal.fibre || 0}g</span>
-                                                    <span className="w-[50px]">S: {meal.sugar || 0}g</span>
+                                                    <span className="w-[50px]">P: {Math.round(meal.protein || 0)}g</span>
+                                                    <span className="w-[50px]">C: {Math.round(meal.carbs || 0)}g</span>
+                                                    <span className="w-[50px]">F: {Math.round(meal.fat || 0)}g</span>
+                                                    <span className="w-[50px]">Fi: {Math.round(meal.fibre || 0)}g</span>
+                                                    <span className="w-[50px]">S: {Math.round(meal.sugar || 0)}g</span>
                                                 </div>
                                             </div>
                                         </div>
