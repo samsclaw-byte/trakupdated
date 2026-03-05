@@ -1,0 +1,13 @@
+﻿
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\app\nutrition\NutritionToday.tsx
+    4:87  warning  'Camera' is defined but never used                               @typescript-eslint/no-unused-vars
+    4:95  warning  'X' is defined but never used                                    @typescript-eslint/no-unused-vars
+  155:64  warning  'base64' is defined but never used                               @typescript-eslint/no-unused-vars
+  386:57  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  386:76  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\samcu\.gemini\antigravity\scratch\trak\src\app\nutrition\SnapToTrakModal.tsx
+  27:12  warning  'parsedData' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 6 problems (2 errors, 4 warnings)
+

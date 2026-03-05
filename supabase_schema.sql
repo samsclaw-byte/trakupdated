@@ -43,6 +43,7 @@ create table public.meals (
   fat numeric,
   fibre numeric,
   sugar numeric,
+  description text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

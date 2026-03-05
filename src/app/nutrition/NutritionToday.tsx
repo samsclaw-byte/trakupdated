@@ -1,11 +1,12 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, Camera, X } from "lucide-react";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { logSquadEvent } from "@/utils/squads";
+import SnapToTrakModal, { ParsedMeal } from "./SnapToTrakModal";
 
 interface Meal {
     id: string;
@@ -18,6 +19,7 @@ interface Meal {
     fat: number;
     fibre: number;
     sugar: number;
+    description?: string;
     created_at: string;
 }
 
@@ -36,10 +38,10 @@ export default function NutritionToday() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [isSnapModalOpen, setIsSnapModalOpen] = useState(false);
 
     const supabaseRef = useRef(createClient());
     const router = useRouter();
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handlePrevDay = () => {
         const prev = new Date(selectedDate);
@@ -150,15 +152,38 @@ export default function NutritionToday() {
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const handleLogVisionMeal = async (parsedData: ParsedMeal) => {
+        const supabase = supabaseRef.current;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setImageBase64(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+        const { data: newMeal, error } = await supabase
+            .from("meals")
+            .insert({
+                user_id: user.id,
+                meal_type: selectedType, // default or let user choose later? For now default to what is selected on dashboard
+                text_entry: parsedData.title,
+                description: parsedData.description,
+                calories: parsedData.calories,
+                protein: parsedData.protein,
+                carbs: parsedData.carbs,
+                fat: parsedData.fat,
+                fibre: parsedData.fibre,
+                sugar: parsedData.sugar,
+                ...(selectedDate ? { created_at: new Date(selectedDate).toISOString() } : {}),
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        setMeals(prev => [newMeal, ...prev]);
+
+        // Squad logic
+        const newConsumed = consumed + (Number(newMeal.calories) || 0);
+        if (consumed < goal * 0.9 && newConsumed >= goal * 0.9 && newConsumed <= goal + 150) {
+            logSquadEvent(user.id, 'calorie_target_hit', { calories: newConsumed });
+        }
     };
 
     const handleDeleteMeal = async (mealId: string) => {
@@ -257,47 +282,48 @@ export default function NutritionToday() {
                 )}
             </div>
 
-            {/* AI Input */}
+            {/* Add Meal Text Input */}
             <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">What did you eat today?</h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Log a Meal</h3>
+                </div>
+
+                {/* Snap-to-Trak Premium Entry */}
+                <button
+                    onClick={() => setIsSnapModalOpen(true)}
+                    className="w-full relative overflow-hidden rounded-3xl p-6 border border-amber-500/20 group transition-all"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-black via-brand-black to-amber-900/20 z-0"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+                                <ScanLine className="w-5 h-5 text-amber-500" />
+                            </div>
+                            <div className="text-left">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-bold text-lg text-white">Snap-to-Trak</h4>
+                                    <span className="px-2 py-0.5 rounded-sm bg-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-wider">Pro</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Log meals instantly with Vision AI</p>
+                            </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-white transition-colors" />
+                    </div>
+                </button>
+
+                {/* Standard Text Logging */}
                 <div className="flex flex-col gap-3 bg-white/5 border border-white/10 rounded-3xl p-3 transition-all focus-within:bg-white/[0.07] focus-within:border-brand-emerald/50">
                     <textarea
-                        placeholder="2 eggs and a black coffee..."
-                        className="w-full bg-transparent outline-none px-3 py-2 text-lg resize-none min-h-[80px]"
+                        placeholder="Or manually type it (e.g. 2 eggs and a black coffee)..."
+                        className="w-full bg-transparent outline-none px-3 py-2 text-sm resize-none min-h-[60px]"
                         value={mealInput}
                         onChange={(e) => setMealInput(e.target.value)}
                         disabled={isSubmitting}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddMeal(); } }}
                     />
 
-                    {imageBase64 && (
-                        <div className="relative w-20 h-20 ml-2 mb-2 rounded-xl overflow-hidden border border-white/10 group">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={imageBase64} alt="Meal preview" className="w-full h-full object-cover" />
-                            <button
-                                onClick={() => setImageBase64(null)}
-                                className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <X className="w-6 h-6 text-white" />
-                            </button>
-                        </div>
-                    )}
-
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                         <div className="flex flex-wrap gap-2 flex-1 items-center">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                            />
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="p-2.5 mr-1 rounded-full bg-white/5 text-brand-emerald hover:bg-brand-emerald/20 transition-colors"
-                            >
-                                <Camera className="w-5 h-5" />
-                            </button>
                             <QuickAction label="Breakfast" icon={Coffee} isActive={selectedType === "Breakfast"} onClick={() => setSelectedType("Breakfast")} />
                             <QuickAction label="Lunch" icon={Pizza} isActive={selectedType === "Lunch"} onClick={() => setSelectedType("Lunch")} />
                             <QuickAction label="Dinner" icon={Drumstick} isActive={selectedType === "Dinner"} onClick={() => setSelectedType("Dinner")} />
@@ -305,8 +331,8 @@ export default function NutritionToday() {
                         </div>
                         <button
                             onClick={handleAddMeal}
-                            disabled={(!mealInput.trim() && !imageBase64) || isSubmitting}
-                            className="h-10 px-5 w-full sm:w-auto bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
+                            disabled={!mealInput.trim() || isSubmitting}
+                            className="h-9 px-5 bg-brand-emerald text-brand-black text-sm font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
                         >
                             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add meal"}
                         </button>
@@ -353,8 +379,13 @@ export default function NutritionToday() {
                                             </div>
                                             <div className="min-w-0">
                                                 <h4 className="font-semibold text-foreground/90 capitalize truncate">
-                                                    {meal.text_entry.substring(0, 25)}{meal.text_entry.length > 25 ? '...' : ''}
+                                                    {meal.text_entry}
                                                 </h4>
+                                                {meal.description && (
+                                                    <p className="text-[11px] text-muted-foreground/80 mt-0.5 line-clamp-1 italic">
+                                                        &quot;{meal.description}&quot;
+                                                    </p>
+                                                )}
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1 w-full max-w-[150px]">
                                                     <span className="w-[50px]">P: {Math.round(meal.protein || 0)}g</span>
                                                     <span className="w-[50px]">C: {Math.round(meal.carbs || 0)}g</span>
@@ -384,6 +415,13 @@ export default function NutritionToday() {
                     )}
                 </div>
             </div>
+
+            <SnapToTrakModal
+                isOpen={isSnapModalOpen}
+                onClose={() => setIsSnapModalOpen(false)}
+                onLogMeal={handleLogVisionMeal}
+            />
+
         </div>
     );
 }

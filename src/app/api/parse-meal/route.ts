@@ -11,7 +11,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { mealText, mealType, date, imageBase64 } = await req.json();
+        const { mealText, mealType, date, imageBase64, previewOnly } = await req.json();
 
         if (!mealText && !imageBase64) {
             return NextResponse.json({ error: "Please provide a meal description or photo" }, { status: 400 });
@@ -32,6 +32,8 @@ The user will give you a natural language description and/or an image of a meal 
 You must estimate the absolute best guess for the nutritional macros of that meal.
 You MUST reply ONLY with a valid JSON object matching this exact structure, with NO surrounding markdown or text:
 {
+  "title": string (3-5 words summarizing the dish),
+  "description": string (1-2 sentences detailing what is visible in the meal),
   "calories": number,
   "protein": number,
   "carbs": number,
@@ -107,13 +109,18 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
 
         const parsedMacros = JSON.parse(aiResponseText);
 
+        if (previewOnly) {
+            return NextResponse.json(parsedMacros);
+        }
+
         // 3. Save to Supabase `meals` table
         const { data: newMeal, error: dbError } = await supabase
             .from("meals")
             .insert({
                 user_id: user.id,
                 meal_type: mealType,
-                text_entry: mealText,
+                text_entry: parsedMacros.title || mealText || "Logged Meal",
+                description: parsedMacros.description || null,
                 calories: parsedMacros.calories,
                 protein: parsedMacros.protein,
                 carbs: parsedMacros.carbs,
