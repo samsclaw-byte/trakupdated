@@ -12,6 +12,7 @@ create table public.users (
   bmr numeric,
   daily_calories numeric,
   member_number serial,
+  is_trak_plus boolean not null default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

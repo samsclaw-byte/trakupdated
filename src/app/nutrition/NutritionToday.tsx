@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, Camera, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,7 @@ interface UserProfile {
 
 export default function NutritionToday() {
     const [mealInput, setMealInput] = useState("");
+    const [imageBase64, setImageBase64] = useState<string | null>(null);
     const [selectedType, setSelectedType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Breakfast");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [meals, setMeals] = useState<Meal[]>([]);
@@ -38,6 +39,7 @@ export default function NutritionToday() {
 
     const supabaseRef = useRef(createClient());
     const router = useRouter();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handlePrevDay = () => {
         const prev = new Date(selectedDate);
@@ -112,13 +114,18 @@ export default function NutritionToday() {
     }, [router, selectedDate]);
 
     const handleAddMeal = async () => {
-        if (!mealInput.trim()) return;
+        if (!mealInput.trim() && !imageBase64) return;
         setIsSubmitting(true);
         try {
             const res = await fetch('/api/parse-meal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mealText: mealInput, mealType: selectedType, date: selectedDate.toISOString() })
+                body: JSON.stringify({
+                    mealText: mealInput,
+                    mealType: selectedType,
+                    date: selectedDate.toISOString(),
+                    imageBase64
+                })
             });
             if (!res.ok) throw new Error("Failed to parse meal");
             const newMeal = await res.json();
@@ -134,12 +141,24 @@ export default function NutritionToday() {
             }
 
             setMealInput("");
+            setImageBase64(null);
         } catch (error) {
             console.error("Error adding meal:", error);
             alert("Sorry, there was an issue logging your meal. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImageBase64(reader.result as string);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleDeleteMeal = async (mealId: string) => {
@@ -251,8 +270,33 @@ export default function NutritionToday() {
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddMeal(); } }}
                     />
 
+                    {imageBase64 && (
+                        <div className="relative w-20 h-20 ml-2 mb-2 rounded-xl overflow-hidden border border-white/10 group">
+                            <img src={imageBase64} alt="Meal preview" className="w-full h-full object-cover" />
+                            <button
+                                onClick={() => setImageBase64(null)}
+                                className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                <X className="w-6 h-6 text-white" />
+                            </button>
+                        </div>
+                    )}
+
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div className="flex flex-wrap gap-2 flex-1">
+                        <div className="flex flex-wrap gap-2 flex-1 items-center">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="p-2.5 mr-1 rounded-full bg-white/5 text-brand-emerald hover:bg-brand-emerald/20 transition-colors"
+                            >
+                                <Camera className="w-5 h-5" />
+                            </button>
                             <QuickAction label="Breakfast" icon={Coffee} isActive={selectedType === "Breakfast"} onClick={() => setSelectedType("Breakfast")} />
                             <QuickAction label="Lunch" icon={Pizza} isActive={selectedType === "Lunch"} onClick={() => setSelectedType("Lunch")} />
                             <QuickAction label="Dinner" icon={Drumstick} isActive={selectedType === "Dinner"} onClick={() => setSelectedType("Dinner")} />
@@ -260,7 +304,7 @@ export default function NutritionToday() {
                         </div>
                         <button
                             onClick={handleAddMeal}
-                            disabled={!mealInput.trim() || isSubmitting}
+                            disabled={(!mealInput.trim() && !imageBase64) || isSubmitting}
                             className="h-10 px-5 w-full sm:w-auto bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
                         >
                             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add meal"}

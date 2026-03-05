@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, User, Activity } from "lucide-react";
+import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, User, Activity, Crown } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
@@ -13,6 +13,7 @@ interface UserProfile {
     member_number: number | null;
     created_at: string;
     daily_calories: number;
+    is_trak_plus: boolean;
 }
 
 export default function ProfileClient() {
@@ -31,7 +32,7 @@ export default function ProfileClient() {
 
             const { data: dbUser } = await supabase
                 .from('users')
-                .select('name, email, member_number, created_at, daily_calories')
+                .select('name, email, member_number, created_at, daily_calories, is_trak_plus')
                 .eq('id', user.id)
                 .single();
 
@@ -41,6 +42,7 @@ export default function ProfileClient() {
                 member_number: dbUser?.member_number || null,
                 created_at: dbUser?.created_at || user.created_at,
                 daily_calories: dbUser?.daily_calories || 2400,
+                is_trak_plus: dbUser?.is_trak_plus || false,
             });
             setIsLoading(false);
         };
@@ -79,7 +81,9 @@ export default function ProfileClient() {
                 </div>
 
                 {isLoading ? (
-                    <div className="h-24 bg-white/5 rounded-3xl animate-pulse" />
+                    <div className="flex flex-col items-center mt-4 mb-10">
+                        <div className="w-full max-w-sm h-28 animate-shimmer rounded-3xl shadow-2xl" />
+                    </div>
                 ) : (
                     <>
                         {/* Prestige Badge (Classic Pill) */}
@@ -101,14 +105,40 @@ export default function ProfileClient() {
                                         Since {profile ? formatDate(profile.created_at) : "Mar 2026"}
                                     </p>
                                 </div>
-                                <div className="text-right relative z-10">
-                                    <p className="text-[10px] text-brand-emerald uppercase tracking-widest font-bold mb-1">trak Member</p>
+                                <div className="text-right relative z-10 w-full flex flex-col items-end">
+                                    {profile?.is_trak_plus ? (
+                                        <div className="flex items-center gap-1 mb-1 text-brand-emerald">
+                                            <Crown className="w-3 h-3 fill-current" />
+                                            <p className="text-[10px] uppercase tracking-widest font-bold">Trak+ Pro</p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Trak Free</p>
+                                    )}
                                     <p className="text-2xl font-serif italic text-white/80 tracking-widest">
                                         No. {profile ? formatMemberNum(profile.member_number) : "0042"}
                                     </p>
                                 </div>
                             </motion.div>
                         </div>
+
+                        {/* Upgrade Button (If not premium) */}
+                        {profile?.is_trak_plus === false && (
+                            <div className="mb-8">
+                                <button
+                                    onClick={() => router.push('/trak-plus')}
+                                    className="w-full relative group overflow-hidden rounded-2xl p-[1px]"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-brand-emerald via-blue-500 to-brand-emerald opacity-70 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient"></div>
+                                    <div className="relative bg-brand-black px-4 py-3 rounded-[15px] flex items-center justify-between group-hover:bg-opacity-90 transition-all duration-300">
+                                        <div className="flex flex-col text-left">
+                                            <span className="font-bold text-sm text-white flex items-center gap-1"><Crown className="w-4 h-4 text-brand-emerald" /> Upgrade to Trak+</span>
+                                            <span className="text-[10px] text-white/60">Unlock premium colors & squads</span>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white transition-colors" />
+                                    </div>
+                                </button>
+                            </div>
+                        )}
 
                         {/* Stats & Goals */}
                         <div className="space-y-4">

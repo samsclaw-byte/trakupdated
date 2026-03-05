@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import ExerciseSheet from "./ExerciseSheet";
 import AddHabitModal from "./AddHabitModal";
 import { logSquadEvent } from "@/utils/squads";
+import confetti from "canvas-confetti";
 
 // Icon mapping
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -69,6 +70,7 @@ export default function HabitsToday() {
     const [allDone, setAllDone] = useState(false);
     const [showExercise, setShowExercise] = useState(false);
     const [showAddHabit, setShowAddHabit] = useState(false);
+    const [isTrakPlus, setIsTrakPlus] = useState(false);
 
     const supabaseRef = useRef(createClient());
 
@@ -77,6 +79,17 @@ export default function HabitsToday() {
         const supabase = supabaseRef.current;
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+
+        // Fetch user profile for premium flag
+        const { data: userProfile } = await supabase
+            .from('users')
+            .select('is_trak_plus')
+            .eq('id', user.id)
+            .single();
+
+        if (userProfile) {
+            setIsTrakPlus(userProfile.is_trak_plus);
+        }
 
         // Fetch habit definitions
         let { data: habitDefs } = await supabase
@@ -187,6 +200,11 @@ export default function HabitsToday() {
 
         // Celebration animation
         if (isCompleted && !currentLog?.completed) {
+            // Haptic Feedback for completion
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+
             setCelebratingId(habit.id);
             setTimeout(() => setCelebratingId(null), 1200);
             logSquadEvent(user.id, 'habit_completed', { habit_name: habit.name });
@@ -194,8 +212,40 @@ export default function HabitsToday() {
             // Check if this was the last habit to make a perfect day
             const otherHabits = habits.filter(h => h.id !== habit.id);
             const othersCompleted = otherHabits.every(h => logs[h.id]?.completed);
+
             if (othersCompleted) {
                 logSquadEvent(user.id, 'perfect_day', {});
+
+                // Bigger Haptic Pattern for Perfect Day
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100, 50, 200]);
+                }
+
+                // Full screen confetti cannon
+                const duration = 3000;
+                const end = Date.now() + duration;
+
+                const frame = () => {
+                    confetti({
+                        particleCount: 5,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: -0.1, y: 0.8 },
+                        colors: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
+                    });
+                    confetti({
+                        particleCount: 5,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1.1, y: 0.8 },
+                        colors: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                };
+                frame();
             }
         }
     };
@@ -305,12 +355,25 @@ export default function HabitsToday() {
         setShowExercise(false);
 
         if (!currentLog?.completed) {
+            // Haptic
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(50);
+            }
             logSquadEvent(user.id, 'habit_completed', { habit_name: `${exerciseType} (${duration}m)` });
 
             const otherHabits = habits.filter(h => h.id !== exerciseHabit.id);
             const othersCompleted = otherHabits.every(h => logs[h.id]?.completed);
             if (othersCompleted) {
                 logSquadEvent(user.id, 'perfect_day');
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100, 50, 200]);
+                }
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.6 },
+                    colors: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
+                });
             }
         }
     };
@@ -323,7 +386,7 @@ export default function HabitsToday() {
             {/* Completion Ring */}
             <div className="relative flex flex-col items-center justify-center py-4">
                 {isLoading ? (
-                    <div className="w-44 h-44 rounded-full bg-white/5 animate-pulse" />
+                    <div className="w-44 h-44 rounded-full animate-shimmer" />
                 ) : (
                     <div className="relative w-44 h-44">
                         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -370,13 +433,13 @@ export default function HabitsToday() {
             <div className="space-y-3">
                 {isLoading ? (
                     [1, 2, 3, 4, 5].map(i => (
-                        <div key={i} className="flex items-center gap-4 p-5 bg-white/5 rounded-3xl animate-pulse">
-                            <div className="w-12 h-12 bg-white/5 rounded-2xl flex-shrink-0" />
+                        <div key={i} className="flex items-center gap-4 p-5 animate-shimmer rounded-3xl">
+                            <div className="w-12 h-12 bg-black/20 rounded-2xl flex-shrink-0" />
                             <div className="flex-1 space-y-2">
-                                <div className="h-4 bg-white/5 rounded w-1/3" />
-                                <div className="h-3 bg-white/5 rounded w-1/4" />
+                                <div className="h-4 bg-black/20 rounded w-1/3" />
+                                <div className="h-3 bg-black/20 rounded w-1/4" />
                             </div>
-                            <div className="w-12 h-12 bg-white/5 rounded-full" />
+                            <div className="w-12 h-12 bg-black/20 rounded-full" />
                         </div>
                     ))
                 ) : (
@@ -538,6 +601,7 @@ export default function HabitsToday() {
                 isOpen={showAddHabit}
                 onClose={() => setShowAddHabit(false)}
                 onCreated={loadData}
+                isTrakPlus={isTrakPlus}
             />
         </div>
     );

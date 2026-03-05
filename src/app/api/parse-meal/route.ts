@@ -11,24 +11,24 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { mealText, mealType, date } = await req.json();
+        const { mealText, mealType, date, imageBase64 } = await req.json();
 
-        if (!mealText || !mealType) {
-            return NextResponse.json({ error: "Missing mealText or mealType" }, { status: 400 });
+        if (!mealText && !imageBase64) {
+            return NextResponse.json({ error: "Please provide a meal description or photo" }, { status: 400 });
         }
 
-        if (mealText.length > 500) {
+        if (mealText && mealText.length > 500) {
             return NextResponse.json({ error: "Meal description too long (max 500 characters)" }, { status: 400 });
         }
 
-        // 2. Call Moonshot AI Kimi 2.5 (with 15s timeout)
+        // 2. Call Moonshot AI
         const apiKey = process.env.MOONSHOT_API_KEY;
         if (!apiKey) {
             throw new Error("Missing MOONSHOT_API_KEY");
         }
 
         const systemPrompt = `You are a strict, expert nutritional analyst.
-The user will give you a natural language description of a meal they ate.
+The user will give you a natural language description and/or an image of a meal they ate.
 You must estimate the absolute best guess for the nutritional macros of that meal.
 You MUST reply ONLY with a valid JSON object matching this exact structure, with NO surrounding markdown or text:
 {
@@ -45,6 +45,23 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
 
         let moonshotRes;
         try {
+            // Build content array, either text, or text + image
+            const userContent: any[] = [];
+            if (mealText) {
+                userContent.push({ type: "text", text: mealText });
+            } else if (imageBase64) {
+                userContent.push({ type: "text", text: "Parse the nutrition of this meal." });
+            }
+
+            if (imageBase64) {
+                userContent.push({
+                    type: "image_url",
+                    image_url: { url: imageBase64 }
+                });
+            }
+
+            const modelName = imageBase64 ? "moonshot-v1-8k-vision-preview" : "moonshot-v1-8k";
+
             moonshotRes = await fetch("https://api.moonshot.ai/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -52,10 +69,10 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
                     Authorization: `Bearer ${apiKey}`,
                 },
                 body: JSON.stringify({
-                    model: "moonshot-v1-8k",
+                    model: modelName,
                     messages: [
                         { role: "system", content: systemPrompt },
-                        { role: "user", content: mealText },
+                        { role: "user", content: userContent },
                     ],
                     temperature: 0.1,
                 }),

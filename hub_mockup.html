@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trak Hub - Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            black: '#0a0a0a',
+                            emerald: '#10b981',
+                            amber: '#f59e0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-brand-black text-white min-h-screen flex flex-col font-sans mb-20 overflow-x-hidden">
+
+    <!-- Header -->
+    <div class="px-6 pt-12 pb-6 sticky top-0 bg-brand-black/90 backdrop-blur-xl z-40 border-b border-white/5">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">The Hub</h1>
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-emerald mt-1">Trak+ Pro Active</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">
+                SC
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6 flex flex-col gap-6 max-w-md mx-auto w-full">
+
+        <!-- Premium Shimmer Outline (Pro Only feature) -->
+        <div
+            class="relative p-[1px] rounded-3xl overflow-hidden bg-gradient-to-br from-brand-emerald/50 via-purple-500/20 to-brand-amber/30">
+            <div class="absolute inset-0 bg-brand-emerald/20 blur-xl"></div>
+
+            <div class="relative bg-brand-black/80 backdrop-blur-2xl rounded-[23px] p-6 flex flex-col items-center">
+                <!-- Trak Score Ring Graphic -->
+                <div class="relative w-40 h-40 mb-4 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" class="stroke-white/10" stroke-width="8"
+                            stroke-linecap="round"></circle>
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradient)" stroke-width="8"
+                            stroke-dasharray="283" stroke-dashoffset="56" stroke-linecap="round"></circle>
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#10b981" />
+                                <stop offset="100%" stop-color="#3b82f6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="absolute flex flex-col items-center justify-center">
+                        <span
+                            class="text-4xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/70">82</span>
+                        <span
+                            class="text-[9px] uppercase tracking-widest text-muted-foreground font-bold text-white/50">Trak
+                            Score</span>
+                    </div>
+                </div>
+
+                <p class="text-sm text-center text-white/80 max-w-[250px] leading-relaxed mb-4">You're in the top <span
+                        class="text-brand-emerald font-bold">5%</span> of your active squads this week. Keep it up!</p>
+            </div>
+        </div>
+
+        <!-- Metric Grid -->
+        <div class="grid grid-cols-2 gap-4">
+
+            <!-- Nutrition Widget -->
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
+                            </path>
+                        </svg>
+                        <span class="text-[10px] font-bold uppercase text-white/40">Nutrition</span>
+                    </div>
+                    <h3 class="text-xl font-bold tracking-tight mb-1">1,850</h3>
+                    <p class="text-xs text-brand-emerald font-medium">150 kcal under target</p>
+                </div>
+
+                <div class="mt-6 flex flex-col gap-2">
+                    <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-white h-full rounded-full" style="width: 75%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] uppercase font-bold text-white/50">
+                        <span>Protein</span>
+                        <span>145g</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HealthKit Widget (Whoop/Apple Health) -->
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
+                            </path>
+                        </svg>
+                        <span class="text-[10px] font-bold uppercase text-white/40">Recovery</span>
+                    </div>
+                    <h3 class="text-xl font-bold tracking-tight mb-1 text-red-400">32%</h3>
+                    <p class="text-xs text-white/60 font-medium">Primed to Rest</p>
+                </div>
+
+                <div class="mt-6">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/ea/Whoop_Logo.svg" alt="Whoop"
+                        class="h-4 opacity-50 grayscale invert" />
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Squad Alert Banner -->
+        <div
+            class="w-full bg-brand-emerald/10 border border-brand-emerald/20 p-4 py-5 rounded-2xl flex items-center justify-between gap-4">
+            <div class="p-2 bg-brand-emerald/20 rounded-full shrink-0">
+                <span class="text-xl">🏆</span>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-bold text-white">Morning Crew Lead!</p>
+                <p class="text-xs text-emerald-400 font-medium mt-0.5">Your perfect day pushed you to #1.</p>
+            </div>
+            <button class="px-3 py-1.5 bg-brand-emerald text-brand-black text-xs font-bold rounded-lg shrink-0">
+                Feed
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Floating Action Button Mockup -->
+    <div
+        class="fixed bottom-8 right-6 w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+        <svg fill="currentColor" viewBox="0 0 24 24" width="24" height="24">
+            <path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"></path>
+        </svg>
+    </div>
+
+</body>
+
+</html>

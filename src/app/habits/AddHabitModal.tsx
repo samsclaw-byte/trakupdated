@@ -2,12 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    X, ChevronRight,
+    X, ChevronRight, Lock,
     Pill, Zap, Droplets, Apple, Dumbbell, Check,
     Heart, Star, Flame, Moon, Sun, Coffee, Book, Leaf, Brain,
     Music, Smile, Shield, Clock, Compass, Diamond, Sparkles, Target, Medal, Eye
 } from "lucide-react";
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -55,9 +56,11 @@ interface AddHabitModalProps {
     isOpen: boolean;
     onClose: () => void;
     onCreated: () => void;
+    isTrakPlus: boolean;
 }
 
-export default function AddHabitModal({ isOpen, onClose, onCreated }: AddHabitModalProps) {
+export default function AddHabitModal({ isOpen, onClose, onCreated, isTrakPlus }: AddHabitModalProps) {
+    const router = useRouter();
     const [step, setStep] = useState(1);
     const [name, setName] = useState("");
     const [trackType, setTrackType] = useState<"boolean" | "count">("boolean");
@@ -287,20 +290,33 @@ export default function AddHabitModal({ isOpen, onClose, onCreated }: AddHabitMo
                                     >
                                         <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Choose Color</label>
                                         <div className="flex flex-wrap gap-4 justify-center">
-                                            {COLOR_OPTIONS.map(color => (
-                                                <motion.button
-                                                    key={color.name}
-                                                    whileTap={{ scale: 0.85 }}
-                                                    onClick={() => setSelectedColor(color.name)}
-                                                    className={cn(
-                                                        "w-12 h-12 rounded-full transition-all",
-                                                        color.class,
-                                                        selectedColor === color.name
-                                                            ? "ring-2 ring-offset-2 ring-offset-card ring-white scale-110"
-                                                            : "opacity-60 hover:opacity-80"
-                                                    )}
-                                                />
-                                            ))}
+                                            {COLOR_OPTIONS.map((color, idx) => {
+                                                const isLocked = !isTrakPlus && idx >= 5;
+                                                return (
+                                                    <motion.button
+                                                        key={color.name}
+                                                        whileTap={{ scale: 0.85 }}
+                                                        onClick={() => {
+                                                            if (isLocked) {
+                                                                onClose();
+                                                                router.push('/trak-plus');
+                                                            } else {
+                                                                setSelectedColor(color.name);
+                                                            }
+                                                        }}
+                                                        className={cn(
+                                                            "w-12 h-12 rounded-full transition-all flex items-center justify-center",
+                                                            color.class,
+                                                            selectedColor === color.name
+                                                                ? "ring-2 ring-offset-2 ring-offset-card ring-white scale-110"
+                                                                : "hover:opacity-100",
+                                                            isLocked ? "opacity-30 grayscale" : "opacity-80"
+                                                        )}
+                                                    >
+                                                        {isLocked && <Lock className="w-5 h-5 text-white/50" />}
+                                                    </motion.button>
+                                                )
+                                            })}
                                         </div>
                                         <button
                                             onClick={handleCreate}
