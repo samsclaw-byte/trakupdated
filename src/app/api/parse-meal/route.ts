@@ -11,7 +11,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { mealText, mealType } = await req.json();
+        const { mealText, mealType, date } = await req.json();
 
         if (!mealText || !mealType) {
             return NextResponse.json({ error: "Missing mealText or mealType" }, { status: 400 });
@@ -103,6 +103,7 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
                 fat: parsedMacros.fat,
                 fibre: parsedMacros.fibre,
                 sugar: parsedMacros.sugar,
+                ...(date ? { created_at: new Date(date).toISOString() } : {}),
             })
             .select()
             .single();

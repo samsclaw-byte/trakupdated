@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2 } from "lucide-react";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -34,9 +34,43 @@ export default function NutritionToday() {
     const [meals, setMeals] = useState<Meal[]>([]);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     const supabaseRef = useRef(createClient());
     const router = useRouter();
+
+    const handlePrevDay = () => {
+        const prev = new Date(selectedDate);
+        prev.setDate(prev.getDate() - 1);
+        setSelectedDate(prev);
+    };
+
+    const handleNextDay = () => {
+        const next = new Date(selectedDate);
+        next.setDate(next.getDate() + 1);
+        if (next <= new Date()) {
+            setSelectedDate(next);
+        }
+    };
+
+    const isToday = () => {
+        const today = new Date();
+        return selectedDate.getDate() === today.getDate() &&
+            selectedDate.getMonth() === today.getMonth() &&
+            selectedDate.getFullYear() === today.getFullYear();
+    };
+
+    const formatDateHeader = () => {
+        if (isToday()) return "Today";
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (selectedDate.getDate() === yesterday.getDate() &&
+            selectedDate.getMonth() === yesterday.getMonth() &&
+            selectedDate.getFullYear() === yesterday.getFullYear()) {
+            return "Yesterday";
+        }
+        return selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    };
 
     useEffect(() => {
         const supabase = supabaseRef.current;
@@ -56,22 +90,26 @@ export default function NutritionToday() {
 
             if (userProfile) setProfile(userProfile);
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const startOfDay = new Date(selectedDate);
+            startOfDay.setHours(0, 0, 0, 0);
 
-            const { data: todayMeals } = await supabase
+            const endOfDay = new Date(selectedDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const { data: dayMeals } = await supabase
                 .from('meals')
                 .select('*')
                 .eq('user_id', user.id)
-                .gte('created_at', today.toISOString())
+                .gte('created_at', startOfDay.toISOString())
+                .lte('created_at', endOfDay.toISOString())
                 .order('created_at', { ascending: false });
 
-            if (todayMeals) setMeals(todayMeals);
+            if (dayMeals) setMeals(dayMeals);
             setIsLoading(false);
         };
 
         fetchDashboardData();
-    }, [router]);
+    }, [router, selectedDate]);
 
     const handleAddMeal = async () => {
         if (!mealInput.trim()) return;
@@ -80,7 +118,7 @@ export default function NutritionToday() {
             const res = await fetch('/api/parse-meal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mealText: mealInput, mealType: selectedType })
+                body: JSON.stringify({ mealText: mealInput, mealType: selectedType, date: selectedDate.toISOString() })
             });
             if (!res.ok) throw new Error("Failed to parse meal");
             const newMeal = await res.json();
@@ -113,9 +151,15 @@ export default function NutritionToday() {
             // Refetch on failure
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const { data } = await supabase.from('meals').select('*').eq('user_id', user.id).gte('created_at', today.toISOString()).order('created_at', { ascending: false });
+                const startOfDay = new Date(selectedDate);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(selectedDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                const { data } = await supabase.from('meals').select('*')
+                    .eq('user_id', user.id)
+                    .gte('created_at', startOfDay.toISOString())
+                    .lte('created_at', endOfDay.toISOString())
+                    .order('created_at', { ascending: false });
                 if (data) setMeals(data);
             }
         }
@@ -136,6 +180,17 @@ export default function NutritionToday() {
 
     return (
         <div className="px-6 py-8 space-y-12 pb-8">
+            {/* Date Navigator */}
+            <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-2 mb-4">
+                <button onClick={handlePrevDay} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                    <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <span className="font-bold text-sm tracking-widest uppercase text-white/90">{formatDateHeader()}</span>
+                <button onClick={handleNextDay} disabled={isToday()} className="p-2 hover:bg-white/10 rounded-xl transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+            </div>
+
             {/* Calorie Ring Area */}
             <div className="relative flex flex-col items-center justify-center py-4">
                 {isLoading ? (
