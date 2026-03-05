@@ -272,6 +272,7 @@ export default function NutritionToday() {
 
                     {imageBase64 && (
                         <div className="relative w-20 h-20 ml-2 mb-2 rounded-xl overflow-hidden border border-white/10 group">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={imageBase64} alt="Meal preview" className="w-full h-full object-cover" />
                             <button
                                 onClick={() => setImageBase64(null)}

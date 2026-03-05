@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Check, Activity, Target, Zap, Scale, ArrowRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { cn } from "@/lib/utils";
 
 interface UserMetrics {
     bmr: number | null;

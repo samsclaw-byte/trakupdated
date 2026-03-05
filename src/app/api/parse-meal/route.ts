@@ -46,7 +46,7 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
         let moonshotRes;
         try {
             // Build content array, either text, or text + image
-            const userContent: any[] = [];
+            const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
             if (mealText) {
                 userContent.push({ type: "text", text: mealText });
             } else if (imageBase64) {
