@@ -19,7 +19,6 @@ interface Meal {
     fat: number;
     fibre: number;
     sugar: number;
-    description?: string;
     created_at: string;
 }
 
@@ -162,8 +161,7 @@ export default function NutritionToday() {
             .insert({
                 user_id: user.id,
                 meal_type: selectedType, // default or let user choose later? For now default to what is selected on dashboard
-                text_entry: parsedData.title,
-                description: parsedData.description,
+                text_entry: `${parsedData.title} |:| ${parsedData.description}`,
                 calories: parsedData.calories,
                 protein: parsedData.protein,
                 carbs: parsedData.carbs,
@@ -379,11 +377,11 @@ export default function NutritionToday() {
                                             </div>
                                             <div className="min-w-0">
                                                 <h4 className="font-semibold text-foreground/90 capitalize truncate">
-                                                    {meal.text_entry}
+                                                    {meal.text_entry.includes(' |:| ') ? meal.text_entry.split(' |:| ')[0] : meal.text_entry}
                                                 </h4>
-                                                {meal.description && (
+                                                {meal.text_entry.includes(' |:| ') && (
                                                     <p className="text-[11px] text-muted-foreground/80 mt-0.5 line-clamp-1 italic">
-                                                        &quot;{meal.description}&quot;
+                                                        &quot;{meal.text_entry.split(' |:| ')[1]}&quot;
                                                     </p>
                                                 )}
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1 w-full max-w-[150px]">
