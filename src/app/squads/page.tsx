@@ -6,6 +6,7 @@ import { Users, Plus, Key, X, Loader2, Trophy, Activity } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 import { FeedCard, FeedItem } from "@/components/squads/FeedCard";
+import { ProfileBadgeCard } from "@/components/ui/ProfileBadgeCard";
 
 interface Squad {
     id: string;
@@ -32,7 +33,10 @@ interface SquadMember {
         name: string;
         member_number: number | null;
         created_at: string;
+        is_trak_plus: boolean;
     };
+    habitsStreak: number;
+    fitnessStreak: number;
 }
 
 export default function SquadsPage() {
@@ -115,13 +119,53 @@ export default function SquadsPage() {
                 .from('squad_members')
                 .select(`
                     user_id, role, joined_at,
-                    users ( name, member_number, created_at )
+                    users ( name, member_number, created_at, is_trak_plus )
                 `)
                 .eq('squad_id', squadId)
-                .order('role', { ascending: true }) // 'admin' comes before 'member'
+                .order('role', { ascending: true })
                 .order('joined_at', { ascending: true });
 
-            if (data) setSquadMembers(data as unknown as SquadMember[]);
+            if (data) {
+                // For each member, fetch their best habit streak and workout streak
+                const enriched = await Promise.all(
+                    (data as unknown as Omit<SquadMember, 'habitsStreak' | 'fitnessStreak'>[]).map(async (member) => {
+                        // Best habit streak
+                        const { data: streaks } = await supabase
+                            .from('habit_streaks')
+                            .select('best_streak')
+                            .eq('user_id', member.user_id)
+                            .order('best_streak', { ascending: false })
+                            .limit(1);
+                        const habitsStreak = streaks?.[0]?.best_streak || 0;
+
+                        // Workout streak (count distinct workout days)
+                        const { data: workouts } = await supabase
+                            .from('workouts')
+                            .select('created_at')
+                            .eq('user_id', member.user_id)
+                            .order('created_at', { ascending: false })
+                            .limit(100);
+
+                        let fitnessStreak = 0;
+                        if (workouts && workouts.length > 0) {
+                            const days = [...new Set(workouts.map((w: { created_at: string }) =>
+                                new Date(w.created_at).toISOString().split('T')[0]
+                            ))];
+                            let streak = 1;
+                            let best = 1;
+                            for (let i = 1; i < days.length; i++) {
+                                const diff = (new Date(days[i - 1]).getTime() - new Date(days[i]).getTime()) / 86400000;
+                                if (Math.round(diff) === 1) { streak++; best = Math.max(best, streak); }
+                                else { streak = 1; }
+                            }
+                            fitnessStreak = best;
+                        }
+
+                        return { ...member, habitsStreak, fitnessStreak };
+                    })
+                );
+                setSquadMembers(enriched as SquadMember[]);
+            }
         }
         setIsDataLoading(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -392,43 +436,31 @@ export default function SquadsPage() {
                     <div className="flex flex-col gap-4">
                         {squadMembers.map((member, index) => {
                             const name = member.users?.name || 'User';
-                            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
                             const joinedDate = new Date(member.users?.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                            const memberNum = member.users?.member_number?.toString().padStart(4, '0') || "0042";
+                            const memberNum = member.users?.member_number?.toString().padStart(4, '0') || '0001';
+                            const isTrakPlus = member.users?.is_trak_plus || false;
 
                             return (
                                 <motion.div
-                                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}
                                     key={member.user_id}
-                                    className="relative w-full h-28 bg-white/5 rounded-3xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-between px-8"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
                                 >
-                                    {/* Glass shine effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
                                     {member.role === 'admin' && (
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl mix-blend-screen pointer-events-none" />
+                                        <p className="text-[9px] uppercase tracking-widest font-black text-amber-500 mb-1.5 pl-1">👑 Admin</p>
                                     )}
-
-                                    <div className="space-y-1 relative z-10 w-full">
-                                        <div className="flex items-center justify-between w-full">
-                                            <h2 className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white to-white/50">
-                                                {initials}
-                                            </h2>
-                                            <div className="text-right">
-                                                <div className="flex items-center justify-end gap-2 mb-1">
-                                                    {member.role === 'admin' && (
-                                                        <span className="text-[9px] px-2 py-0.5 rounded-sm bg-amber-500/20 text-amber-500 uppercase tracking-widest font-black">Admin</span>
-                                                    )}
-                                                    <p className="text-[10px] text-brand-emerald uppercase tracking-widest font-bold">trak Member</p>
-                                                </div>
-                                                <p className="text-xl font-serif italic text-white/80 tracking-widest">
-                                                    No. {memberNum}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold whitespace-nowrap overflow-hidden text-ellipsis">
-                                            {name} • Since {joinedDate}
-                                        </p>
-                                    </div>
+                                    <ProfileBadgeCard
+                                        initials={initials}
+                                        sinceDate={`Since ${joinedDate}`}
+                                        memberNumber={memberNum}
+                                        isTrakPlus={isTrakPlus}
+                                        nutritionStreak={0}
+                                        habitsStreak={member.habitsStreak}
+                                        fitnessStreak={member.fitnessStreak}
+                                    />
+                                    <p className="text-[10px] text-muted-foreground text-center mt-1.5">{name}</p>
                                 </motion.div>
                             );
                         })}
