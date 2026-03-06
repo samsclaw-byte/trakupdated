@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import { ACTIVITIES } from "@/utils/METs";
 import LogWorkoutModal from "./LogWorkoutModal";
 
-interface Workout {
+export interface Workout {
     id: string;
     activity_type: string;
     intensity: string;
@@ -20,41 +20,41 @@ export default function FitnessToday() {
     const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const supabase = createClient();
-
     useEffect(() => {
+        const fetchWorkouts = async () => {
+            try {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                // Fetch explicitly for today in the user's timezone
+                const now = new Date();
+                const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+                    .toISOString()
+                    .split("T")[0];
+
+                const { data, error } = await supabase
+                    .from("workouts")
+                    .select("*")
+                    .eq("user_id", user.id)
+                    .eq("date", todayStr)
+                    .order("created_at", { ascending: false });
+
+                if (error) throw error;
+                setWorkouts(data || []);
+            } catch (error) {
+                console.error("Error fetching workouts:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
         fetchWorkouts();
     }, []);
 
-    const fetchWorkouts = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            // Fetch explicitly for today in the user's timezone
-            const now = new Date();
-            const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
-                .toISOString()
-                .split("T")[0];
-
-            const { data, error } = await supabase
-                .from("workouts")
-                .select("*")
-                .eq("user_id", user.id)
-                .eq("date", todayStr)
-                .order("created_at", { ascending: false });
-
-            if (error) throw error;
-            setWorkouts(data || []);
-        } catch (error) {
-            console.error("Error fetching workouts:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const handleDeleteWorkout = async (id: string) => {
         try {
+            const supabase = createClient();
             const { error } = await supabase.from("workouts").delete().eq("id", id);
             if (error) throw error;
             setWorkouts(workouts.filter((w) => w.id !== id));
@@ -84,12 +84,11 @@ export default function FitnessToday() {
                     </div>
                 </div>
             </div>
-
             {/* Logged Workouts List */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-                        Today's Activity
+                        Today&apos;s Activity
                     </h3>
                 </div>
 
@@ -148,10 +147,10 @@ export default function FitnessToday() {
                         })
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
 
             {/* Floating Action Button */}
-            <div className="fixed bottom-28 right-6">
+            < div className="fixed bottom-28 right-6" >
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -160,16 +159,16 @@ export default function FitnessToday() {
                 >
                     <Plus className="w-6 h-6" />
                 </motion.button>
-            </div>
+            </div >
 
             <LogWorkoutModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onLogged={(newWorkout) => {
+                onLogged={(newWorkout: Workout) => {
                     setWorkouts([newWorkout, ...workouts]);
                     setIsModalOpen(false);
                 }}
             />
-        </div>
+        </div >
     );
 }

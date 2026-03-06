@@ -26,61 +26,60 @@ export default function FitnessTrends() {
         return arr;
     };
 
-    const supabase = createClient();
-
     useEffect(() => {
+        const fetchTrends = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - timeframe + 1);
+
+            const { data: workouts, error } = await supabase
+                .from("workouts")
+                .select("date, calories_burned")
+                .eq("user_id", user.id)
+                .gte("date", startDate.toISOString().split("T")[0])
+                .lte("date", endDate.toISOString().split("T")[0]);
+
+            if (error) {
+                console.error("Error fetching fitness trends:", error);
+                return;
+            }
+
+            // Aggregate stats
+            let totalCals = 0;
+            const uniqueDays = new Set<string>();
+
+            workouts?.forEach(w => {
+                totalCals += w.calories_burned;
+                uniqueDays.add(w.date);
+            });
+
+            setStats({
+                totalWorkouts: workouts?.length || 0,
+                totalCalories: totalCals,
+                activeDays: uniqueDays.size,
+            });
+
+            // Build grid data
+            const days = getDaysArray(timeframe);
+            const mappedData = days.map(day => {
+                const dateStr = day.toISOString().split("T")[0];
+                const daysWorkouts = workouts?.filter(w => w.date === dateStr) || [];
+                return {
+                    date: day,
+                    calories: daysWorkouts.reduce((sum, w) => sum + w.calories_burned, 0),
+                    didWorkout: daysWorkouts.length > 0
+                };
+            });
+
+            setDailyData(mappedData);
+        };
+
         fetchTrends();
     }, [timeframe]);
-
-    const fetchTrends = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(endDate.getDate() - timeframe + 1);
-
-        const { data: workouts, error } = await supabase
-            .from("workouts")
-            .select("date, calories_burned")
-            .eq("user_id", user.id)
-            .gte("date", startDate.toISOString().split("T")[0])
-            .lte("date", endDate.toISOString().split("T")[0]);
-
-        if (error) {
-            console.error("Error fetching fitness trends:", error);
-            return;
-        }
-
-        // Aggregate stats
-        let totalCals = 0;
-        const uniqueDays = new Set<string>();
-
-        workouts?.forEach(w => {
-            totalCals += w.calories_burned;
-            uniqueDays.add(w.date);
-        });
-
-        setStats({
-            totalWorkouts: workouts?.length || 0,
-            totalCalories: totalCals,
-            activeDays: uniqueDays.size,
-        });
-
-        // Build grid data
-        const days = getDaysArray(timeframe);
-        const mappedData = days.map(day => {
-            const dateStr = day.toISOString().split("T")[0];
-            const daysWorkouts = workouts?.filter(w => w.date === dateStr) || [];
-            return {
-                date: day,
-                calories: daysWorkouts.reduce((sum, w) => sum + w.calories_burned, 0),
-                didWorkout: daysWorkouts.length > 0
-            };
-        });
-
-        setDailyData(mappedData);
-    };
 
     const getWeekday = (date: Date) => {
         return date.toLocaleDateString("en-US", { weekday: "short" }).charAt(0);

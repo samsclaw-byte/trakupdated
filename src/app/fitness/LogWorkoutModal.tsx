@@ -5,11 +5,12 @@ import { X, Activity, Flame, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ACTIVITIES, Intensity, calculateCaloriesBurned } from "@/utils/METs";
 import { createClient } from "@/utils/supabase/client";
+import { Workout } from "./FitnessToday";
 
 interface LogWorkoutModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onLogged: (workout: unknown) => void;
+    onLogged: (workout: Workout) => void;
 }
 
 export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkoutModalProps) {
@@ -20,11 +21,11 @@ export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkou
     const [estimatedBurn, setEstimatedBurn] = useState(0);
     const [userWeight, setUserWeight] = useState(80); // Default fallback
 
-    const supabase = createClient();
-
+    // fetch user weight on mount
     // Fetch user weight on mount to accurately calculate METs
     useEffect(() => {
         const fetchWeight = async () => {
+            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 const { data } = await supabase.from("users").select("weight").eq("id", user.id).single();
@@ -48,6 +49,7 @@ export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkou
     const handleLog = async () => {
         setIsSubmitting(true);
         try {
+            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not logged in");
 
