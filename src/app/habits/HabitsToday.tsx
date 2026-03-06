@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Pill, Zap, Droplets, Apple, Dumbbell,
-    Check, Plus, Sparkles, Minus, X
+    Check, Plus, Sparkles, Minus, X, Flame
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -73,6 +73,7 @@ export default function HabitsToday() {
     const [isTrakPlus, setIsTrakPlus] = useState(false);
     const [milestone, setMilestone] = useState<{ milestone: StreakMilestone; habitName: string } | null>(null);
     const [bestStreaks, setBestStreaks] = useState<Record<string, number>>({});
+    const [activeStreaks, setActiveStreaks] = useState<Record<string, number>>({});
 
     const supabaseRef = useRef(createClient());
 
@@ -134,13 +135,18 @@ export default function HabitsToday() {
         // Fetch best streaks for badge display
         const { data: streakData } = await supabase
             .from('habit_streaks')
-            .select('habit_id, best_streak')
+            .select('habit_id, best_streak, current_streak')
             .eq('user_id', user.id);
 
         if (streakData) {
             const streakMap: Record<string, number> = {};
-            streakData.forEach(s => { streakMap[s.habit_id] = s.best_streak; });
+            const currentMap: Record<string, number> = {};
+            streakData.forEach(s => {
+                streakMap[s.habit_id] = s.best_streak;
+                currentMap[s.habit_id] = s.current_streak || 0;
+            });
             setBestStreaks(streakMap);
+            setActiveStreaks(currentMap);
         }
 
         setIsLoading(false);
@@ -222,6 +228,7 @@ export default function HabitsToday() {
 
             // Update local best streak display
             setBestStreaks(prev => ({ ...prev, [habit.id]: streakResult.bestStreak }));
+            setActiveStreaks(prev => ({ ...prev, [habit.id]: streakResult.currentStreak }));
 
             // Show milestone celebration if a new one was unlocked
             if (streakResult.newMilestone) {
@@ -406,6 +413,7 @@ export default function HabitsToday() {
                         const isCelebrating = celebratingId === habit.id;
                         const progress = habit.target_value > 0 ? (currentValue / habit.target_value) * 100 : 0;
                         const habitBestStreak = bestStreaks[habit.id] || 0;
+                        const habitActiveStreak = activeStreaks[habit.id] || 0;
 
                         return (
                             <motion.div
@@ -430,8 +438,13 @@ export default function HabitsToday() {
 
                                 {/* Name + Progress */}
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <h4 className="font-bold text-sm">{habit.name}</h4>
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        <h4 className="font-bold text-sm tracking-wide">{habit.name}</h4>
+                                        {habitActiveStreak >= 2 && (
+                                            <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded-md border border-orange-400/20 shadow-[0_0_10px_rgba(251,146,60,0.1)]">
+                                                <Flame className="w-3 h-3 text-orange-500" /> {habitActiveStreak} Day{habitActiveStreak > 1 ? 's' : ''}
+                                            </span>
+                                        )}
                                         <StreakBadge bestStreak={habitBestStreak} />
                                     </div>
                                     {habit.unit ? (
@@ -512,8 +525,8 @@ export default function HabitsToday() {
                                                     animate={{
                                                         opacity: 0,
                                                         scale: 1,
-                                                        x: (Math.random() - 0.5) * 120,
-                                                        y: (Math.random() - 0.5) * 80,
+                                                        x: (i % 2 === 0 ? 1 : -1) * (20 + i * 15),
+                                                        y: (i % 3 === 0 ? 1 : -1) * (15 + i * 10),
                                                     }}
                                                     exit={{ opacity: 0 }}
                                                     transition={{ duration: 0.8, ease: "easeOut" }}

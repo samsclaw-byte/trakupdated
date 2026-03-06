@@ -13,6 +13,18 @@ export interface ParsedMeal {
     fat: number;
     fibre: number;
     sugar: number;
+    micronutrients?: {
+        sodium: number;
+        potassium: number;
+        calcium: number;
+        magnesium: number;
+        iron: number;
+        zinc: number;
+        vitamin_c: number;
+        vitamin_d: number;
+        vitamin_b12: number;
+        folate: number;
+    } | null;
 }
 
 interface SnapToTrakModalProps {
@@ -72,6 +84,7 @@ export default function SnapToTrakModal({ isOpen, onClose, onLogMeal }: SnapToTr
                 fat: Number(data.fat) || 0,
                 fibre: Number(data.fibre) || 0,
                 sugar: Number(data.sugar) || 0,
+                micronutrients: data.micronutrients || null,
             };
 
             setEditData(normalizedData);

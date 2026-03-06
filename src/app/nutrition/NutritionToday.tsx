@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine, Crown } from "lucide-react";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine, Crown, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -183,6 +183,7 @@ export default function NutritionToday() {
                 fat: parsedData.fat,
                 fibre: parsedData.fibre,
                 sugar: parsedData.sugar,
+                micronutrients: parsedData.micronutrients || null,
                 ...(selectedDate ? { created_at: new Date(selectedDate).toISOString() } : {}),
             })
             .select()
@@ -357,33 +358,46 @@ export default function NutritionToday() {
                                         </div>
                                     )}
                                     <div className="grid grid-cols-2 gap-2">
-                                        <MicroCard label="Sodium" value={sodiumTotal} unit="mg" target={MICRO_TARGETS.sodium} onClick={() => setMicroInfo('Sodium')} />
-                                        <MicroCard label="Potassium" value={potassiumTotal} unit="mg" target={MICRO_TARGETS.potassium} onClick={() => setMicroInfo('Potassium')} />
-                                        <MicroCard label="Calcium" value={calciumTotal} unit="mg" target={MICRO_TARGETS.calcium} onClick={() => setMicroInfo('Calcium')} />
-                                        <MicroCard label="Magnesium" value={magnesiumTotal} unit="mg" target={MICRO_TARGETS.magnesium} onClick={() => setMicroInfo('Magnesium')} />
-                                        <MicroCard label="Iron" value={ironTotal} unit="mg" target={MICRO_TARGETS.iron} onClick={() => setMicroInfo('Iron')} />
-                                        <MicroCard label="Zinc" value={zincTotal} unit="mg" target={MICRO_TARGETS.zinc} onClick={() => setMicroInfo('Zinc')} />
-                                        <MicroCard label="Vit C" value={vitCTotal} unit="mg" target={MICRO_TARGETS.vitamin_c} onClick={() => setMicroInfo('Vit C')} />
-                                        <MicroCard label="Vit D" value={vitDTotal} unit="mcg" target={MICRO_TARGETS.vitamin_d} onClick={() => setMicroInfo('Vit D')} />
-                                        <MicroCard label="Vit B12" value={vitB12Total} unit="mcg" target={MICRO_TARGETS.vitamin_b12} onClick={() => setMicroInfo('Vit B12')} />
-                                        <MicroCard label="Folate" value={folateTotal} unit="mcg" target={MICRO_TARGETS.folate} onClick={() => setMicroInfo('Folate')} />
+                                        <MicroCard label="Sodium" value={sodiumTotal} unit="mg" target={MICRO_TARGETS.sodium} onClick={() => setMicroInfo('Sodium')} colorClass="bg-sky-400" />
+                                        <MicroCard label="Potassium" value={potassiumTotal} unit="mg" target={MICRO_TARGETS.potassium} onClick={() => setMicroInfo('Potassium')} colorClass="bg-yellow-400" />
+                                        <MicroCard label="Calcium" value={calciumTotal} unit="mg" target={MICRO_TARGETS.calcium} onClick={() => setMicroInfo('Calcium')} colorClass="bg-slate-200" />
+                                        <MicroCard label="Magnesium" value={magnesiumTotal} unit="mg" target={MICRO_TARGETS.magnesium} onClick={() => setMicroInfo('Magnesium')} colorClass="bg-pink-400" />
+                                        <MicroCard label="Iron" value={ironTotal} unit="mg" target={MICRO_TARGETS.iron} onClick={() => setMicroInfo('Iron')} colorClass="bg-red-400" />
+                                        <MicroCard label="Zinc" value={zincTotal} unit="mg" target={MICRO_TARGETS.zinc} onClick={() => setMicroInfo('Zinc')} colorClass="bg-purple-400" />
+                                        <MicroCard label="Vit C" value={vitCTotal} unit="mg" target={MICRO_TARGETS.vitamin_c} onClick={() => setMicroInfo('Vit C')} colorClass="bg-orange-500" />
+                                        <MicroCard label="Vit D" value={vitDTotal} unit="mcg" target={MICRO_TARGETS.vitamin_d} onClick={() => setMicroInfo('Vit D')} colorClass="bg-amber-400" />
+                                        <MicroCard label="Vit B12" value={vitB12Total} unit="mcg" target={MICRO_TARGETS.vitamin_b12} onClick={() => setMicroInfo('Vit B12')} colorClass="bg-rose-500" />
+                                        <MicroCard label="Folate" value={folateTotal} unit="mcg" target={MICRO_TARGETS.folate} onClick={() => setMicroInfo('Folate')} colorClass="bg-green-400" />
                                     </div>
 
-                                    {/* Micro info popup */}
+                                    {/* Micro Info Modal */}
                                     <AnimatePresence>
                                         {microInfo && MICRO_INFO[microInfo] && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                                                className="mt-3 bg-white/[0.06] border border-white/10 rounded-2xl p-4"
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <p className="text-sm font-bold text-white">{microInfo}</p>
-                                                    <button onClick={() => setMicroInfo(null)} className="text-white/30 hover:text-white text-xs">✕</button>
-                                                </div>
-                                                <p className="text-xs text-white/70 leading-relaxed mb-2">{MICRO_INFO[microInfo].why}</p>
-                                                <p className="text-[10px] text-brand-emerald font-bold uppercase tracking-wider">Best sources</p>
-                                                <p className="text-[11px] text-white/50 mt-0.5">{MICRO_INFO[microInfo].sources}</p>
-                                            </motion.div>
+                                            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                                    className="w-full max-w-sm bg-brand-black border border-white/10 rounded-[32px] p-6 relative shadow-2xl"
+                                                >
+                                                    <button onClick={() => setMicroInfo(null)} className="absolute top-5 right-5 text-white/40 hover:text-white transition-colors bg-white/5 rounded-full p-2">
+                                                        <X className="w-5 h-5" />
+                                                    </button>
+                                                    <div className="mb-6 mt-2">
+                                                        <h3 className="text-3xl font-black mb-1">{microInfo}</h3>
+                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-emerald">Micronutrient Guide</p>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1.5">Why you need it</p>
+                                                            <p className="text-sm text-white/80 leading-relaxed font-medium">{MICRO_INFO[microInfo].why}</p>
+                                                        </div>
+                                                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                                                            <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">Best Sources</p>
+                                                            <p className="text-sm text-white/90 leading-relaxed font-medium">{MICRO_INFO[microInfo].sources}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => setMicroInfo(null)} className="w-full mt-6 py-4 bg-white/10 hover:bg-white/20 transition-colors rounded-2xl font-bold text-sm tracking-wide">Got it</button>
+                                                </motion.div>
+                                            </div>
                                         )}
                                     </AnimatePresence>
                                 </motion.div>
@@ -550,18 +564,22 @@ function StatsCard({ label, value, progress }: { label: string; value: string; p
     );
 }
 
-function MicroCard({ label, value, unit, target, onClick }: { label: string; value: number; unit: string; target: number; onClick?: () => void }) {
+function MicroCard({ label, value, unit, target, onClick, colorClass }: { label: string; value: number; unit: string; target: number; onClick?: () => void; colorClass: string }) {
     const pct = Math.min((value / target) * 100, 100);
-    const color = pct >= 80 ? "bg-brand-emerald" : pct >= 40 ? "bg-amber-400" : "bg-white/20";
+    const textClass = colorClass.replace('bg-', 'text-');
+
     return (
-        <button onClick={onClick} className="flex flex-col items-center gap-1 bg-white/[0.03] border border-white/5 rounded-2xl p-3 w-full text-left active:bg-white/10 transition-colors">
-            <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">{label}</span>
-            <span className="text-base font-bold leading-tight">{value}<span className="text-[9px] text-muted-foreground ml-0.5">{unit}</span></span>
-            <div className="w-full h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                    transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${color}`} />
+        <button onClick={onClick} className="flex flex-col items-start gap-1 bg-white/[0.03] border border-white/5 rounded-2xl p-3.5 w-full text-left active:bg-white/10 transition-all hover:bg-white/[0.05]">
+            <span className={`text-[10px] uppercase tracking-widest font-bold ${textClass}`}>{label}</span>
+            <div className="flex items-end gap-1 mt-1">
+                <span className="text-2xl font-black leading-none">{value}</span>
+                <span className="text-[10px] text-muted-foreground mb-0.5">{unit}</span>
             </div>
-            <span className="text-[8px] text-white/20">{target}{unit} goal</span>
+            <div className="w-full h-1.5 bg-white/5 rounded-full mt-2 overflow-hidden">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${colorClass}`} />
+            </div>
+            <span className="text-[9px] text-white/30 font-medium mt-1 uppercase tracking-wider">{target}{unit} goal</span>
         </button>
     );
 }
