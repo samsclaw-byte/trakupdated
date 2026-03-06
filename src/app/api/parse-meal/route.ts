@@ -44,9 +44,13 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
     "sodium": number (mg),
     "potassium": number (mg),
     "calcium": number (mg),
+    "magnesium": number (mg),
     "iron": number (mg),
+    "zinc": number (mg),
     "vitamin_c": number (mg),
-    "vitamin_d": number (mcg)
+    "vitamin_d": number (mcg),
+    "vitamin_b12": number (mcg),
+    "folate": number (mcg)
   }
 }
 All values should be realistic estimates for a typical portion of the food described.`;

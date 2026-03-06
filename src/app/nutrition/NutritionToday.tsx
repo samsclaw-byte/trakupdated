@@ -24,9 +24,13 @@ interface Meal {
         sodium: number;
         potassium: number;
         calcium: number;
+        magnesium: number;
         iron: number;
+        zinc: number;
         vitamin_c: number;
         vitamin_d: number;
+        vitamin_b12: number;
+        folate: number;
     } | null;
 }
 
@@ -48,6 +52,7 @@ export default function NutritionToday() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [isSnapModalOpen, setIsSnapModalOpen] = useState(false);
     const [macroView, setMacroView] = useState<'macro' | 'micro'>('macro');
+    const [microInfo, setMicroInfo] = useState<string | null>(null);
 
     const supabaseRef = useRef(createClient());
     const router = useRouter();
@@ -234,13 +239,30 @@ export default function NutritionToday() {
     const sodiumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.sodium || 0), 0));
     const potassiumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.potassium || 0), 0));
     const calciumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.calcium || 0), 0));
+    const magnesiumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.magnesium || 0), 0));
     const ironTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.iron || 0), 0) * 10) / 10;
+    const zincTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.zinc || 0), 0) * 10) / 10;
     const vitCTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.vitamin_c || 0), 0));
     const vitDTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.vitamin_d || 0), 0) * 10) / 10;
+    const vitB12Total = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.vitamin_b12 || 0), 0) * 10) / 10;
+    const folateTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.folate || 0), 0));
 
     // Target values (EU Daily Reference Intakes)
-    const MICRO_TARGETS = { sodium: 2300, potassium: 3500, calcium: 1000, iron: 14, vitamin_c: 80, vitamin_d: 5 };
+    const MICRO_TARGETS = { sodium: 2300, potassium: 3500, calcium: 1000, magnesium: 375, iron: 14, zinc: 10, vitamin_c: 80, vitamin_d: 5, vitamin_b12: 2.5, folate: 200 };
     const isTrakPlus = profile?.is_trak_plus || false;
+
+    const MICRO_INFO: Record<string, { why: string; sources: string }> = {
+        Sodium: { why: "Regulates fluid balance, blood pressure, and nerve signals. Most people over-consume sodium — tracking helps stay under 2300mg.", sources: "Processed foods, table salt, bread, deli meats" },
+        Potassium: { why: "Counteracts sodium's blood pressure effects, supports muscle contractions and heart rhythm. Critical for athletes.", sources: "Bananas, potatoes, spinach, avocado, salmon" },
+        Calcium: { why: "Essential for bone density, muscle contraction, and nerve function. Deficiency accelerates bone loss over time.", sources: "Dairy, leafy greens, fortified plant milks, tofu" },
+        Magnesium: { why: "Involved in 300+ enzyme reactions including energy production, protein synthesis, sleep quality, and stress regulation. One of the most common deficiencies.", sources: "Nuts, seeds, dark chocolate, legumes, leafy greens" },
+        Iron: { why: "Carries oxygen in red blood cells. Iron deficiency causes fatigue and impaired focus — especially common in women and athletes.", sources: "Red meat, spinach, lentils, tofu, fortified cereals" },
+        Zinc: { why: "Supports immune function, testosterone production, wound healing, and taste/smell. Often depleted by intense exercise.", sources: "Oysters, beef, pumpkin seeds, chickpeas, cashews" },
+        "Vit C": { why: "Powerful antioxidant, boosts immune response, aids collagen production, and dramatically improves iron absorption from plant sources.", sources: "Citrus fruits, bell peppers, broccoli, strawberries" },
+        "Vit D": { why: "Regulates calcium absorption, immune defence, mood, and inflammation. Majority of people are deficient, especially those indoors or in northern climates.", sources: "Sunlight, fatty fish, egg yolks, fortified foods" },
+        "Vit B12": { why: "Essential for nerve function, DNA synthesis, and red blood cell formation. Vegans and vegetarians are high-risk for deficiency.", sources: "Meat, fish, dairy, eggs — hard to get without animal products" },
+        Folate: { why: "Critical for DNA repair, cell division, and neural tube development. Especially vital for women of childbearing age and anyone with high cell turnover.", sources: "Leafy greens, legumes, asparagus, fortified grains" },
+    };
 
     return (
         <div className="px-6 py-8 space-y-12 pb-8">
@@ -334,14 +356,36 @@ export default function NutritionToday() {
                                             <p className="text-[10px] text-white/50 text-center px-8">Upgrade to see micronutrient tracking</p>
                                         </div>
                                     )}
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <MicroCard label="Sodium" value={sodiumTotal} unit="mg" target={MICRO_TARGETS.sodium} />
-                                        <MicroCard label="Potassium" value={potassiumTotal} unit="mg" target={MICRO_TARGETS.potassium} />
-                                        <MicroCard label="Calcium" value={calciumTotal} unit="mg" target={MICRO_TARGETS.calcium} />
-                                        <MicroCard label="Iron" value={ironTotal} unit="mg" target={MICRO_TARGETS.iron} />
-                                        <MicroCard label="Vit C" value={vitCTotal} unit="mg" target={MICRO_TARGETS.vitamin_c} />
-                                        <MicroCard label="Vit D" value={vitDTotal} unit="mcg" target={MICRO_TARGETS.vitamin_d} />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <MicroCard label="Sodium" value={sodiumTotal} unit="mg" target={MICRO_TARGETS.sodium} onClick={() => setMicroInfo('Sodium')} />
+                                        <MicroCard label="Potassium" value={potassiumTotal} unit="mg" target={MICRO_TARGETS.potassium} onClick={() => setMicroInfo('Potassium')} />
+                                        <MicroCard label="Calcium" value={calciumTotal} unit="mg" target={MICRO_TARGETS.calcium} onClick={() => setMicroInfo('Calcium')} />
+                                        <MicroCard label="Magnesium" value={magnesiumTotal} unit="mg" target={MICRO_TARGETS.magnesium} onClick={() => setMicroInfo('Magnesium')} />
+                                        <MicroCard label="Iron" value={ironTotal} unit="mg" target={MICRO_TARGETS.iron} onClick={() => setMicroInfo('Iron')} />
+                                        <MicroCard label="Zinc" value={zincTotal} unit="mg" target={MICRO_TARGETS.zinc} onClick={() => setMicroInfo('Zinc')} />
+                                        <MicroCard label="Vit C" value={vitCTotal} unit="mg" target={MICRO_TARGETS.vitamin_c} onClick={() => setMicroInfo('Vit C')} />
+                                        <MicroCard label="Vit D" value={vitDTotal} unit="mcg" target={MICRO_TARGETS.vitamin_d} onClick={() => setMicroInfo('Vit D')} />
+                                        <MicroCard label="Vit B12" value={vitB12Total} unit="mcg" target={MICRO_TARGETS.vitamin_b12} onClick={() => setMicroInfo('Vit B12')} />
+                                        <MicroCard label="Folate" value={folateTotal} unit="mcg" target={MICRO_TARGETS.folate} onClick={() => setMicroInfo('Folate')} />
                                     </div>
+
+                                    {/* Micro info popup */}
+                                    <AnimatePresence>
+                                        {microInfo && MICRO_INFO[microInfo] && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                                                className="mt-3 bg-white/[0.06] border border-white/10 rounded-2xl p-4"
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-sm font-bold text-white">{microInfo}</p>
+                                                    <button onClick={() => setMicroInfo(null)} className="text-white/30 hover:text-white text-xs">✕</button>
+                                                </div>
+                                                <p className="text-xs text-white/70 leading-relaxed mb-2">{MICRO_INFO[microInfo].why}</p>
+                                                <p className="text-[10px] text-brand-emerald font-bold uppercase tracking-wider">Best sources</p>
+                                                <p className="text-[11px] text-white/50 mt-0.5">{MICRO_INFO[microInfo].sources}</p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -506,11 +550,11 @@ function StatsCard({ label, value, progress }: { label: string; value: string; p
     );
 }
 
-function MicroCard({ label, value, unit, target }: { label: string; value: number; unit: string; target: number }) {
+function MicroCard({ label, value, unit, target, onClick }: { label: string; value: number; unit: string; target: number; onClick?: () => void }) {
     const pct = Math.min((value / target) * 100, 100);
     const color = pct >= 80 ? "bg-brand-emerald" : pct >= 40 ? "bg-amber-400" : "bg-white/20";
     return (
-        <div className="flex flex-col items-center gap-1 bg-white/[0.03] border border-white/5 rounded-2xl p-3">
+        <button onClick={onClick} className="flex flex-col items-center gap-1 bg-white/[0.03] border border-white/5 rounded-2xl p-3 w-full text-left active:bg-white/10 transition-colors">
             <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">{label}</span>
             <span className="text-base font-bold leading-tight">{value}<span className="text-[9px] text-muted-foreground ml-0.5">{unit}</span></span>
             <div className="w-full h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
@@ -518,7 +562,7 @@ function MicroCard({ label, value, unit, target }: { label: string; value: numbe
                     transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${color}`} />
             </div>
             <span className="text-[8px] text-white/20">{target}{unit} goal</span>
-        </div>
+        </button>
     );
 }
 
