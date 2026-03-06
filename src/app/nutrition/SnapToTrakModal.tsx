@@ -207,7 +207,6 @@ export default function SnapToTrakModal({ isOpen, onClose, onLogMeal }: SnapToTr
                                 <div className="flex flex-col items-center">
                                     <Loader2 className="w-8 h-8 text-brand-emerald animate-spin mb-4" />
                                     <h2 className="text-xl font-bold uppercase tracking-widest text-brand-emerald mb-2">Analyzing Macros...</h2>
-                                    <p className="text-muted-foreground text-sm font-medium">Moonshot AI is processing your meal</p>
                                 </div>
                             </div>
                         )}

@@ -114,13 +114,16 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
         }
 
         // 3. Save to Supabase `meals` table
+        const title = parsedMacros.title || mealText || "Logged Meal";
+        const desc = parsedMacros.description;
+        const text_entry = desc ? `${title} |:| ${desc}` : title;
+
         const { data: newMeal, error: dbError } = await supabase
             .from("meals")
             .insert({
                 user_id: user.id,
                 meal_type: mealType,
-                text_entry: parsedMacros.title || mealText || "Logged Meal",
-                description: parsedMacros.description || null,
+                text_entry: text_entry,
                 calories: parsedMacros.calories,
                 protein: parsedMacros.protein,
                 carbs: parsedMacros.carbs,
