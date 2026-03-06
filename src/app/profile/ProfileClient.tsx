@@ -6,6 +6,8 @@ import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, User,
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
+import { ProfileBadgeCard } from "@/components/ui/ProfileBadgeCard";
+import { PillarProgressCards } from "@/components/ui/PillarProgressCards";
 
 interface UserProfile {
     name: string;
@@ -19,6 +21,7 @@ interface UserProfile {
 export default function ProfileClient() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [pillarStreaks, setPillarStreaks] = useState({ nutrition: 0, habits: 0, fitness: 0 });
     const router = useRouter();
     const supabase = createClient();
 
@@ -44,6 +47,50 @@ export default function ProfileClient() {
                 daily_calories: dbUser?.daily_calories || 2400,
                 is_trak_plus: dbUser?.is_trak_plus || false,
             });
+
+            // Load best streaks per pillar
+            const { data: streakData } = await supabase
+                .from('habit_streaks')
+                .select('habit_id, best_streak, habit_definitions!inner(name)')
+                .eq('user_id', user.id);
+
+            if (streakData && streakData.length > 0) {
+                // For now, sum best streaks by pillar — habits get the max across all habits
+                let maxHabitStreak = 0;
+                streakData.forEach((s: Record<string, unknown>) => {
+                    if (typeof s.best_streak === 'number' && s.best_streak > maxHabitStreak) {
+                        maxHabitStreak = s.best_streak;
+                    }
+                });
+                setPillarStreaks(prev => ({ ...prev, habits: maxHabitStreak }));
+            }
+
+            // Load workout streak (consecutive days with workouts)
+            const { data: workoutDays } = await supabase
+                .from('workouts')
+                .select('created_at')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(200);
+
+            if (workoutDays && workoutDays.length > 0) {
+                const uniqueDays = [...new Set(workoutDays.map((w: Record<string, unknown>) => new Date(w.created_at as string).toISOString().split('T')[0]))];
+                let fitnessStreak = 1;
+                let bestFitnessStreak = 1;
+                for (let i = 1; i < uniqueDays.length; i++) {
+                    const prev = new Date(uniqueDays[i - 1]);
+                    const curr = new Date(uniqueDays[i]);
+                    const diffDays = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
+                    if (Math.round(diffDays) === 1) {
+                        fitnessStreak++;
+                        bestFitnessStreak = Math.max(bestFitnessStreak, fitnessStreak);
+                    } else {
+                        fitnessStreak = 1;
+                    }
+                }
+                setPillarStreaks(prev => ({ ...prev, fitness: bestFitnessStreak }));
+            }
+
             setIsLoading(false);
         };
         loadProfile();
@@ -86,40 +133,25 @@ export default function ProfileClient() {
                     </div>
                 ) : (
                     <>
-                        {/* Prestige Badge (Classic Pill) */}
-                        <div className="flex flex-col items-center mt-4 mb-10">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="relative w-full max-w-sm h-28 bg-white/5 rounded-3xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-between px-8"
-                            >
-                                {/* Glass shine effect */}
-                                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-emerald/10 blur-3xl mix-blend-screen pointer-events-none" />
-
-                                <div className="space-y-1 relative z-10">
-                                    <h2 className="text-4xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white to-white/50">
-                                        {profile ? getInitials(profile.name) : "JD"}
-                                    </h2>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                                        Since {profile ? formatDate(profile.created_at) : "Mar 2026"}
-                                    </p>
-                                </div>
-                                <div className="text-right relative z-10 w-full flex flex-col items-end">
-                                    {profile?.is_trak_plus ? (
-                                        <div className="flex items-center gap-1 mb-1 text-brand-emerald">
-                                            <Crown className="w-3 h-3 fill-current" />
-                                            <p className="text-[10px] uppercase tracking-widest font-bold">Trak+ Pro</p>
-                                        </div>
-                                    ) : (
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Trak Free</p>
-                                    )}
-                                    <p className="text-2xl font-serif italic text-white/80 tracking-widest">
-                                        No. {profile ? formatMemberNum(profile.member_number) : "0042"}
-                                    </p>
-                                </div>
-                            </motion.div>
+                        {/* Profile Badge Card */}
+                        <div className="flex flex-col items-center mt-4 mb-6">
+                            <ProfileBadgeCard
+                                initials={getInitials(profile?.name || 'User')}
+                                sinceDate={profile ? formatDate(profile.created_at) : 'Mar 2026'}
+                                memberNumber={profile ? formatMemberNum(profile.member_number) : '0001'}
+                                isTrakPlus={profile?.is_trak_plus || false}
+                                nutritionStreak={pillarStreaks.nutrition}
+                                habitsStreak={pillarStreaks.habits}
+                                fitnessStreak={pillarStreaks.fitness}
+                            />
                         </div>
+
+                        {/* Pillar Progress Cards */}
+                        <PillarProgressCards
+                            nutritionStreak={pillarStreaks.nutrition}
+                            habitsStreak={pillarStreaks.habits}
+                            fitnessStreak={pillarStreaks.fitness}
+                        />
 
                         {/* Upgrade Button (If not premium) */}
                         {profile?.is_trak_plus === false && (

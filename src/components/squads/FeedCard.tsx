@@ -6,7 +6,7 @@ import { EmojiReactionBar } from "./EmojiReactionBar";
 
 export interface FeedItem {
     id: string;
-    event_type: 'perfect_day' | 'calorie_target_hit' | 'streak_5' | 'streak_10' | 'streak_21' | 'streak_30' | 'streak_50' | 'streak_100' | 'joined' | 'habit_completed' | 'workout_completed';
+    event_type: 'perfect_day' | 'calorie_target_hit' | 'streak_3' | 'streak_5' | 'streak_10' | 'streak_21' | 'streak_30' | 'streak_50' | 'streak_100' | 'joined' | 'habit_completed' | 'workout_completed';
     metadata: Record<string, unknown>;
     created_at: string;
     users: {
@@ -45,6 +45,7 @@ export function FeedCard({ item, currentUserId }: FeedCardProps) {
             icon = <Flame className="w-5 h-5 text-brand-emerald" />;
             break;
         }
+        case 'streak_3':
         case 'streak_5':
         case 'streak_10':
         case 'streak_21':

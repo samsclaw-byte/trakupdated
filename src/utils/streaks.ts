@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { logSquadEvent } from "@/utils/squads";
 
-export const STREAK_MILESTONES = [5, 10, 21, 30, 50, 100] as const;
+export const STREAK_MILESTONES = [3, 5, 10, 21, 30, 50, 100] as const;
 export type StreakMilestone = (typeof STREAK_MILESTONES)[number];
 
 export interface BadgeInfo {
@@ -12,6 +12,7 @@ export interface BadgeInfo {
 }
 
 export const BADGE_CONFIG: Record<StreakMilestone, BadgeInfo> = {
+    3: { milestone: 3, emoji: "🌱", label: "Getting Started", colorClass: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
     5: { milestone: 5, emoji: "🔥", label: "On a Roll", colorClass: "text-orange-400 bg-orange-400/10 border-orange-400/20" },
     10: { milestone: 10, emoji: "⚡", label: "Locked In", colorClass: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
     21: { milestone: 21, emoji: "💪", label: "Habit Formed", colorClass: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
