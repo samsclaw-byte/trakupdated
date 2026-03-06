@@ -80,9 +80,7 @@ export function PillarProgressCards({ nutritionStreak, habitsStreak, fitnessStre
                             {nextMilestone ? (
                                 <div className="flex items-center gap-1 mt-1.5">
                                     <ChevronRight className="w-3 h-3 text-white/20" />
-                                    <span className="text-[10px] text-white/30">
-                                        {streak} / {nextMilestone} to {BADGE_CONFIG[nextMilestone].emoji} {BADGE_CONFIG[nextMilestone].label}
-                                    </span>
+                                    {streak} / {nextMilestone} to {pillar.key === 'nutrition' ? BADGE_CONFIG[nextMilestone].emoji : (pillar.key === 'habits' ? (nextMilestone >= 5 ? '🔥' : '✅') : (nextMilestone >= 5 ? '⚡' : '💪'))} {BADGE_CONFIG[nextMilestone].label}
                                 </div>
                             ) : (
                                 <p className="text-[10px] text-white/30 mt-1.5">Max tier reached! Keep going.</p>

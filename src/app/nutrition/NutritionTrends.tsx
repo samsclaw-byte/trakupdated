@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, Trophy, Zap, Calendar, Crown } from "lucide-react";
+import { Trophy, Calendar, Crown } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+import { PieChart, Pie, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -21,12 +22,10 @@ interface DailyData {
     calcium: number;
     iron: number;
     vitamin_c: number;
-    [key: string]: number | string;
 }
 
 export default function NutritionTrends() {
     const [view, setView] = useState<"7d" | "28d">("7d");
-    const [metric, setMetric] = useState<string>("calories");
     const [chartData, setChartData] = useState<DailyData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [profile, setProfile] = useState<{ daily_calories: number, weight: number, is_trak_plus: boolean }>({ daily_calories: 2400, weight: 80, is_trak_plus: false });
@@ -35,25 +34,9 @@ export default function NutritionTrends() {
     const supabase = useMemo(() => createClient(), []);
 
     const goal = profile.daily_calories || 2400;
-    const proteinTarget = profile.weight ? Math.round(profile.weight * 1.8) : 180;
-    const carbsTarget = goal ? Math.round((goal * 0.45) / 4) : 270;
-    const fatTarget = goal ? Math.round((goal * 0.25) / 9) : 80;
 
     // MICRO_TARGETS from NutritionToday
     const MICRO_TARGETS = { sodium: 2300, potassium: 3500, calcium: 1000, magnesium: 375, iron: 14, zinc: 10, vitamin_c: 80, vitamin_d: 5, vitamin_b12: 2.5, folate: 200 };
-
-    const METRICS = [
-        { id: 'calories', label: 'Calories', goal: goal, unit: 'kcal', color: 'bg-brand-emerald', text: 'text-brand-emerald', micro: false, goodToExceed: false },
-        { id: 'protein', label: 'Protein', goal: proteinTarget, unit: 'g', color: 'bg-blue-400', text: 'text-blue-400', micro: false, goodToExceed: true },
-        { id: 'carbs', label: 'Carbs', goal: carbsTarget, unit: 'g', color: 'bg-orange-400', text: 'text-orange-400', micro: false, goodToExceed: false },
-        { id: 'fat', label: 'Fat', goal: fatTarget, unit: 'g', color: 'bg-purple-400', text: 'text-purple-400', micro: false, goodToExceed: false },
-        { id: 'fibre', label: 'Fibre', goal: 30, unit: 'g', color: 'bg-yellow-400', text: 'text-yellow-400', micro: false, goodToExceed: true },
-        { id: 'sodium', label: 'Sodium', goal: MICRO_TARGETS.sodium, unit: 'mg', color: 'bg-sky-400', text: 'text-sky-400', micro: true, goodToExceed: false },
-        { id: 'potassium', label: 'Potassium', goal: MICRO_TARGETS.potassium, unit: 'mg', color: 'bg-yellow-400', text: 'text-yellow-400', micro: true, goodToExceed: true },
-        { id: 'calcium', label: 'Calcium', goal: MICRO_TARGETS.calcium, unit: 'mg', color: 'bg-slate-200', text: 'text-slate-200', micro: true, goodToExceed: true },
-        { id: 'iron', label: 'Iron', goal: MICRO_TARGETS.iron, unit: 'mg', color: 'bg-red-400', text: 'text-red-400', micro: true, goodToExceed: true },
-        { id: 'vitamin_c', label: 'Vit C', goal: MICRO_TARGETS.vitamin_c, unit: 'mg', color: 'bg-orange-500', text: 'text-orange-500', micro: true, goodToExceed: true },
-    ];
 
     useEffect(() => {
         const fetchTrends = async () => {
@@ -164,14 +147,53 @@ export default function NutritionTrends() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [view]);
 
-    const activeMetric = METRICS.find(m => m.id === metric) || METRICS[0];
-    const metricMax = Math.max(...chartData.map(d => Number(d[activeMetric.id] || 0)), activeMetric.goal * 1.2);
-    const avgValue = chartData.length > 0
-        ? Math.round(chartData.filter(d => d.calories > 0).reduce((s, d) => s + Number(d[activeMetric.id] || 0), 0) / Math.max(chartData.filter(d => d.calories > 0).length, 1))
+    const activeDaysCount = Math.max(chartData.filter(d => d.calories > 0).length, 1);
+
+    // Calorie averages for bar chart
+    const maxCalories = Math.max(...chartData.map(d => Number(d.calories || 0)), goal * 1.2);
+    const avgCalories = chartData.length > 0
+        ? Math.round(chartData.filter(d => d.calories > 0).reduce((s, d) => s + Number(d.calories || 0), 0) / activeDaysCount)
         : 0;
 
+    // Macro Averages for pie chart
+    const avgProtein = Math.round(chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.protein || 0), 0) / activeDaysCount);
+    const avgCarbs = Math.round(chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.carbs || 0), 0) / activeDaysCount);
+    const avgFat = Math.round(chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.fat || 0), 0) / activeDaysCount);
+
+    const macroData = [
+        { name: 'Carbs', value: avgCarbs, color: '#fb923c' }, // orange-400
+        { name: 'Protein', value: avgProtein, color: '#60a5fa' }, // blue-400
+        { name: 'Fat', value: avgFat, color: '#c084fc' }, // purple-400
+    ].filter(d => d.value > 0);
+
+    // Micro Averages for radar chart
+    const avgSodium = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.sodium || 0), 0) / activeDaysCount;
+    const avgPotassium = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.potassium || 0), 0) / activeDaysCount;
+    const avgCalcium = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.calcium || 0), 0) / activeDaysCount;
+    const avgIron = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.iron || 0), 0) / activeDaysCount;
+    const avgVitC = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.vitamin_c || 0), 0) / activeDaysCount;
+
+    const microData = [
+        { subject: 'Sodium', value: Math.min((avgSodium / MICRO_TARGETS.sodium) * 100, 100) || 0, fullMark: 100 },
+        { subject: 'Potassium', value: Math.min((avgPotassium / MICRO_TARGETS.potassium) * 100, 100) || 0, fullMark: 100 },
+        { subject: 'Calcium', value: Math.min((avgCalcium / MICRO_TARGETS.calcium) * 100, 100) || 0, fullMark: 100 },
+        { subject: 'Iron', value: Math.min((avgIron / MICRO_TARGETS.iron) * 100, 100) || 0, fullMark: 100 },
+        { subject: 'Vit C', value: Math.min((avgVitC / MICRO_TARGETS.vitamin_c) * 100, 100) || 0, fullMark: 100 },
+    ];
+
+    const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-[#1a1a24] p-3 border border-white/10 rounded-xl shadow-2xl">
+                    <p className="text-white text-xs font-bold font-mono">{`${payload[0].name} : ${payload[0].value}g`}</p>
+                </div>
+            );
+        }
+        return null;
+    };
+
     return (
-        <div className="px-6 py-8 space-y-10 pb-8">
+        <div className="px-6 py-8 space-y-8 pb-8">
             {/* Period Toggle */}
             <div className="flex p-1 bg-white/5 border border-white/5 rounded-2xl">
                 {(["7d", "28d"] as const).map((v) => (
@@ -179,7 +201,7 @@ export default function NutritionTrends() {
                         key={v}
                         onClick={() => setView(v)}
                         className={cn(
-                            "flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all",
+                            "flex-1 py-3 text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all",
                             view === v ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
                         )}
                     >
@@ -188,104 +210,41 @@ export default function NutritionTrends() {
                 ))}
             </div>
 
-            {/* Main Chart Card */}
-            <div className="p-8 bg-[rgba(255,255,255,0.02)] border border-white/5 rounded-[2.5rem] space-y-8 shadow-[0_4px_40px_rgba(0,0,0,0.1)] backdrop-blur-3xl">
-
-                {/* Metric Selector Scroll Area */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none snap-x mask-fade-edges -mx-4 px-4">
-                    {METRICS.map((m) => {
-                        const isLocked = m.micro && !profile.is_trak_plus;
-                        return (
-                            <button
-                                key={m.id}
-                                disabled={isLocked}
-                                onClick={() => setMetric(m.id)}
-                                className={cn(
-                                    "flex-shrink-0 px-4 py-2 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all snap-start flex items-center gap-1.5 border",
-                                    metric === m.id
-                                        ? `${m.color.replace('bg-', 'bg-')}/20 ${m.text} border-${m.color.replace('bg-', '')}/50`
-                                        : "bg-white/5 text-muted-foreground border-transparent hover:bg-white/10",
-                                    isLocked && "opacity-40 grayscale"
-                                )}
-                            >
-                                {isLocked && <Crown className="w-3 h-3 text-amber-500" />}
-                                {m.label}
-                            </button>
-                        );
-                    })}
-                </div>
-
+            {/* Calories Vertical Bar Chart */}
+            <div className="p-8 bg-[rgba(255,255,255,0.02)] border border-white/5 rounded-[2.5rem] shadow-[0_4px_40px_rgba(0,0,0,0.1)] backdrop-blur-3xl">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
                         {isLoading ? (
                             <div className="h-8 w-24 bg-white/5 rounded animate-pulse" />
                         ) : (
                             <h3 className="text-3xl font-black tracking-tight flex items-baseline gap-1">
-                                {avgValue > 0 ? avgValue.toLocaleString() : "—"}<span className="text-sm text-muted-foreground font-medium">{activeMetric.unit}</span>
+                                {avgCalories > 0 ? avgCalories.toLocaleString() : "—"}<span className="text-sm text-muted-foreground font-medium">kcal</span>
                             </h3>
                         )}
-                        <p className={cn("text-[10px] uppercase tracking-widest font-bold", activeMetric.text)}>Avg Daily {activeMetric.label}</p>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-brand-emerald">Avg Daily Calories</p>
                     </div>
-                    {avgValue > 0 && (
-                        <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-                            avgValue > activeMetric.goal ? (activeMetric.goodToExceed ? "bg-brand-emerald/10" : "bg-red-500/10") : (activeMetric.goodToExceed ? "bg-red-500/10" : "bg-brand-emerald/10")
-                        )}>
-                            <TrendingUp className={cn("w-3 h-3", avgValue > activeMetric.goal ? (activeMetric.goodToExceed ? "text-brand-emerald" : "text-red-500") : (activeMetric.goodToExceed ? "text-red-500" : "text-brand-emerald"))} />
-                            <span className={cn("text-[10px] font-bold", avgValue > activeMetric.goal ? (activeMetric.goodToExceed ? "text-brand-emerald" : "text-red-500") : (activeMetric.goodToExceed ? "text-red-500" : "text-brand-emerald"))}>
-                                {avgValue > activeMetric.goal
-                                    ? `${Math.round(((avgValue - activeMetric.goal) / activeMetric.goal) * 100)}% over`
-                                    : `${Math.round(((activeMetric.goal - avgValue) / activeMetric.goal) * 100)}% under`}
-                            </span>
-                        </div>
-                    )}
                 </div>
 
-                {/* Chart */}
-                <div className={cn("relative flex items-end justify-between gap-1 pt-6", view === "7d" ? "h-52" : "h-40")}>
-                    {/* Goal Baseline */}
-                    <div
-                        className="absolute left-0 right-0 border-t border-dashed border-white/20 z-0 flex items-center transition-all duration-500"
-                        style={{ bottom: `${Math.min((activeMetric.goal / metricMax) * 100, 100)}%` }}
-                    >
-                        <span className="text-[8px] bg-background/80 px-1 text-muted-foreground/50 tracking-widest uppercase font-bold absolute -top-1.5 right-0 rounded">
-                            Target ({activeMetric.goal}{activeMetric.unit})
-                        </span>
+                <div className={cn("relative flex items-end justify-between gap-1 mt-6", view === "7d" ? "h-44" : "h-36")}>
+                    <div className="absolute left-0 right-0 border-t border-dashed border-white/20 z-0 flex items-center transition-all duration-500" style={{ bottom: `${Math.min((goal / maxCalories) * 100, 100)}%` }}>
+                        <span className="text-[8px] bg-background/80 px-1 text-muted-foreground/50 tracking-widest uppercase font-bold absolute -top-1.5 right-0 rounded">Target ({goal}kcal)</span>
                     </div>
 
                     {isLoading ? (
                         Array.from({ length: view === "7d" ? 7 : 14 }).map((_, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full justify-end z-10">
-                                <div
-                                    className="w-full bg-white/5 rounded-lg animate-pulse"
-                                    style={{ height: `${(i * 15) % 60 + 20}%` }}
-                                />
-                                <div className="h-2 w-6 bg-white/5 rounded animate-pulse" />
-                            </div>
+                            <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full justify-end z-10"><div className="w-full bg-white/5 rounded-lg animate-pulse" style={{ height: `${(i * 15) % 60 + 20}%` }} /></div>
                         ))
                     ) : (
                         chartData.map((d, i) => {
-                            const val = Number(d[activeMetric.id] || 0);
-                            const activePct = (val / metricMax) * 100;
+                            const val = Number(d.calories || 0);
+                            const activePct = (val / maxCalories) * 100;
                             return (
                                 <div key={i} className="relative flex-1 flex flex-col items-center group h-full justify-end z-10 w-full min-w-[3px]">
                                     <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: val > 0 ? `${activePct}%` : "4px" }}
-                                        transition={{ duration: 0.5, delay: i * 0.02 }}
-                                        className={cn(
-                                            "w-[90%] rounded-t-lg transition-all relative overflow-hidden",
-                                            val > activeMetric.goal
-                                                ? (activeMetric.goodToExceed ? `${activeMetric.color.replace('bg-', 'bg-')}/50 group-hover:${activeMetric.color.replace('bg-', 'bg-')}/80` : "bg-red-400/50 group-hover:bg-red-400/80")
-                                                : val > 0
-                                                    ? `${activeMetric.color.replace('bg-', 'bg-')}/50 group-hover:${activeMetric.color.replace('bg-', 'bg-')}/80`
-                                                    : "bg-white/5"
-                                        )}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </motion.div>
-                                    {view === "7d" && (
-                                        <span className="text-[10px] uppercase tracking-tighter text-muted-foreground mt-3 font-bold shrink-0">{d.day}</span>
-                                    )}
+                                        initial={{ height: 0 }} animate={{ height: val > 0 ? `${activePct}%` : "4px" }} transition={{ duration: 0.5, delay: i * 0.02 }}
+                                        className={cn("w-[90%] rounded-t-lg transition-all relative overflow-hidden", val > goal ? "bg-red-400/50 group-hover:bg-red-400/80" : val > 0 ? `bg-brand-emerald/50 group-hover:bg-brand-emerald/80` : "bg-white/5")}
+                                    />
+                                    {view === "7d" && <span className="text-[10px] uppercase tracking-tighter text-muted-foreground mt-3 font-bold shrink-0">{d.day}</span>}
                                 </div>
                             );
                         })
@@ -293,7 +252,92 @@ export default function NutritionTrends() {
                 </div>
             </div>
 
-            {/* Stats Grid */}
+            {/* Macros Donut Pie Chart */}
+            <div className="p-8 bg-[rgba(255,255,255,0.02)] border border-white/5 rounded-[2.5rem] shadow-[0_4px_40px_rgba(0,0,0,0.1)] backdrop-blur-3xl flex flex-col items-center">
+                <div className="w-full text-center space-y-1 mb-4">
+                    <h3 className="text-xl font-black tracking-tight text-white">Macro Balance</h3>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Average Distribution</p>
+                </div>
+
+                {isLoading ? (
+                    <div className="h-48 w-48 rounded-full bg-white/5 animate-pulse my-4" />
+                ) : macroData.length > 0 ? (
+                    <div className="w-full h-56 relative -my-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={macroData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value" stroke="none">
+                                    {macroData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip content={<CustomTooltip />} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="text-xl font-bold tracking-tighter">{Math.round(avgProtein + avgCarbs + avgFat)}g</span>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-sm text-white/30 py-8 font-medium">No macro data available yet.</p>
+                )}
+
+                <div className="flex items-center justify-center gap-6 mt-4">
+                    {macroData.map(m => (
+                        <div key={m.name} className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: m.color }} />
+                            <span className="text-xs font-bold text-white/80">{m.name}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Micro Radar Web Chart */}
+            <div className="p-8 bg-[rgba(255,255,255,0.02)] border border-white/5 rounded-[2.5rem] shadow-[0_4px_40px_rgba(0,0,0,0.1)] backdrop-blur-3xl relative overflow-hidden">
+                {!profile.is_trak_plus && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-md z-20 flex flex-col items-center justify-center p-6 text-center border border-amber-500/20 rounded-[2.5rem]">
+                        <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4 border border-amber-500/20">
+                            <Crown className="w-8 h-8 text-amber-500" />
+                        </div>
+                        <h4 className="text-2xl font-black mb-2 text-white">Micronutrient Radar</h4>
+                        <p className="text-sm text-white/60 mb-6 max-w-[250px]">See if your diet is structurally sound and instantly detect deficiencies with Trak+.</p>
+                        <button className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold rounded-2xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                            Upgrade to Pro
+                        </button>
+                    </div>
+                )}
+
+                <div className="w-full text-center space-y-1 mb-4">
+                    <h3 className="text-xl font-black tracking-tight flex items-center justify-center gap-2 text-white">
+                        {!profile.is_trak_plus && <Crown className="w-4 h-4 text-amber-500" />}
+                        Micronutrient Web
+                    </h3>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">% of Target Hit</p>
+                </div>
+
+                <div className="w-full h-64 -ml-4">
+                    {isLoading ? (
+                        <div className="w-48 h-48 mx-auto rounded-full bg-white/5 animate-pulse my-4" />
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={microData}>
+                                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                <Radar
+                                    name="Actual Hit"
+                                    dataKey="value"
+                                    stroke="#34d399"
+                                    strokeWidth={2}
+                                    fill="#34d399"
+                                    fillOpacity={0.2}
+                                />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    )}
+                </div>
+            </div>
+
+            {/* Extra Stats Grid underneath */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 bg-white/5 border border-white/5 rounded-3xl space-y-4">
                     <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center">
@@ -317,7 +361,7 @@ export default function NutritionTrends() {
                             <div className="h-7 w-16 bg-white/5 rounded animate-pulse mb-1" />
                         ) : (
                             <h4 className="text-xl font-bold">
-                                {chartData.filter(d => d.calories > 0).length} / {chartData.length}
+                                {chartData.filter(d => d.calories > 0).length} / {view === "7d" ? 7 : 28}
                             </h4>
                         )}
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Days Logged</p>
@@ -325,21 +369,6 @@ export default function NutritionTrends() {
                 </div>
             </div>
 
-            {/* Summary Card */}
-            <div className={`p-6 bg-gradient-to-br from-white/10 to-transparent border border-white/5 rounded-[2rem] text-white shadow-xl`}>
-                <div className="flex items-start justify-between mb-4">
-                    <Zap className={cn("w-6 h-6", activeMetric.text)} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Summary</span>
-                </div>
-                <h3 className="text-xl font-bold tracking-tight mb-2 leading-snug">
-                    {avgValue > 0 ? `You averaged ${avgValue.toLocaleString()}${activeMetric.unit} of ${activeMetric.label}` : "Start logging meals!"}
-                </h3>
-                <p className="text-sm font-medium opacity-70 leading-relaxed">
-                    {avgValue > 0
-                        ? `That's ${avgValue > activeMetric.goal ? `${Math.round(avgValue - activeMetric.goal)}${activeMetric.unit} above` : `${Math.round(activeMetric.goal - avgValue)}${activeMetric.unit} below`} your target over the last ${view === "7d" ? "7" : "28"} days.`
-                        : `Log your meals daily to see your personal performance insights appear here.`}
-                </p>
-            </div>
         </div>
     );
 }

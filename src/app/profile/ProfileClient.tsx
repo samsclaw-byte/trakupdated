@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, User, Activity, Crown } from "lucide-react";
+import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, Fingerprint, Activity, Crown } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
@@ -183,37 +183,39 @@ export default function ProfileClient() {
                                 </p>
                             </div>
 
-                            {/* Biometric Scanner Button */}
-                            <button
-                                onClick={handleEditProfile}
-                                className="relative w-full overflow-hidden bg-white/5 border border-brand-emerald/20 rounded-3xl p-5 flex items-center justify-between group transition-all active:scale-[0.98] hover:bg-white/10 mt-2"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-brand-emerald/5 to-transparent pointer-events-none" />
+                            <div className="pt-2">
+                                {/* Biometric Scanner Button */}
+                                <button
+                                    onClick={handleEditProfile}
+                                    className="relative w-full overflow-hidden bg-brand-black border border-white/5 hover:border-brand-emerald/30 rounded-3xl p-5 flex items-center justify-between group transition-all active:scale-[0.98] shadow-sm"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-brand-emerald/5 to-transparent pointer-events-none" />
 
-                                {/* Biometric Visual */}
-                                <div className="relative w-16 h-20 flex-shrink-0 flex items-center justify-center bg-black/40 rounded-xl border border-white/5 overflow-hidden">
-                                    {/* Tech Background Grid */}
-                                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '8px 8px' }} />
+                                    {/* Biometric Visual */}
+                                    <div className="relative w-16 h-20 flex-shrink-0 flex items-center justify-center bg-black/40 rounded-xl border border-white/5 overflow-hidden">
+                                        {/* Tech Background Grid */}
+                                        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '4px 4px' }} />
 
-                                    <User className="w-10 h-10 text-white/50" strokeWidth={1} />
+                                        <Fingerprint className="w-10 h-10 text-white/40 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" strokeWidth={1} />
 
-                                    {/* Scanning Laser Line */}
-                                    <motion.div
-                                        animate={{ top: ["0%", "100%", "0%"] }}
-                                        transition={{ duration: 3, ease: "linear", repeat: Infinity }}
-                                        className="absolute left-0 right-0 h-[2px] bg-brand-emerald shadow-[0_0_12px_rgba(52,211,153,1)] z-10"
-                                    />
-                                </div>
-
-                                <div className="text-right z-10 flex-1 pl-4">
-                                    <div className="flex items-center justify-end gap-1.5 mb-1.5 opacity-80">
-                                        <Activity className="w-3 h-3 text-brand-emerald" />
-                                        <span className="text-[9px] text-brand-emerald font-black uppercase tracking-[0.2em]">Biometric Sync</span>
+                                        {/* Scanning Laser Line */}
+                                        <motion.div
+                                            animate={{ top: ["0%", "100%", "0%"] }}
+                                            transition={{ duration: 3, ease: "linear", repeat: Infinity }}
+                                            className="absolute left-0 right-0 h-[2px] bg-brand-emerald shadow-[0_0_12px_rgba(52,211,153,1)] z-10"
+                                        />
                                     </div>
-                                    <span className="text-lg font-bold text-white tracking-tight block leading-tight">Update Personal Metrics</span>
-                                    <span className="text-xs text-muted-foreground mt-1 block">Recalibrate targets & BMR</span>
-                                </div>
-                            </button>
+
+                                    <div className="text-right z-10 flex-1 pl-4">
+                                        <div className="flex items-center justify-end gap-1.5 mb-1.5 opacity-80">
+                                            <Activity className="w-3 h-3 text-brand-emerald" />
+                                            <span className="text-[9px] text-brand-emerald font-black uppercase tracking-[0.2em]">Biometric Sync</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-white tracking-tight block leading-tight">Update Personal Metrics</span>
+                                        <span className="text-xs text-muted-foreground mt-1 block group-hover:text-white/70 transition-colors">Recalibrate targets & BMR</span>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Settings List */}
