@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ACTIVITIES, Intensity, calculateCaloriesBurned } from "@/utils/METs";
 import { createClient } from "@/utils/supabase/client";
 import { Workout } from "./FitnessToday";
+import { logSquadEvent } from "@/utils/squads";
 
 interface LogWorkoutModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkou
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [estimatedBurn, setEstimatedBurn] = useState(0);
     const [userWeight, setUserWeight] = useState(80); // Default fallback
+    const [dateOffset, setDateOffset] = useState<0 | 1>(0); // 0 = today, 1 = yesterday
 
     // fetch user weight on mount
     // Fetch user weight on mount to accurately calculate METs
@@ -55,10 +57,15 @@ export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkou
 
             const durMint = parseInt(duration) || 30;
 
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() - dateOffset);
+            const dateStr = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+
             const { data, error } = await supabase
                 .from("workouts")
                 .insert({
                     user_id: user.id,
+                    date: dateStr,
                     activity_type: selectedActivity,
                     intensity: intensity,
                     duration_minutes: durMint,
@@ -68,6 +75,14 @@ export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkou
                 .single();
 
             if (error) throw error;
+
+            // Log squad event for workout completed
+            const activityName = ACTIVITIES.find(a => a.id === selectedActivity)?.name || "Workout";
+            logSquadEvent(user.id, "workout_completed", {
+                activity: activityName,
+                calories: estimatedBurn
+            });
+
             onLogged(data);
         } catch (error) {
             console.error("Failed to log workout:", error);
@@ -92,7 +107,7 @@ export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkou
                     animate={{ y: 0 }}
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-full max-w-lg bg-[#111] border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+                    className="relative w-full max-w-lg bg-[#111] border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-24 sm:pb-6 shadow-2xl overflow-y-auto max-h-[90vh]"
                 >
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-2">
@@ -160,6 +175,31 @@ export default function LogWorkoutModal({ isOpen, onClose, onLogged }: LogWorkou
                                         {lvl}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+
+                        {/* 4. Date */}
+                        <div className="space-y-4">
+                            <label className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Date</label>
+                            <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
+                                <button
+                                    onClick={() => setDateOffset(0)}
+                                    className={`flex-1 py-3 text-sm font-medium rounded-lg transition-colors ${dateOffset === 0
+                                        ? "bg-white/10 text-white shadow-sm"
+                                        : "text-muted-foreground hover:text-white"
+                                        }`}
+                                >
+                                    Today
+                                </button>
+                                <button
+                                    onClick={() => setDateOffset(1)}
+                                    className={`flex-1 py-3 text-sm font-medium rounded-lg transition-colors ${dateOffset === 1
+                                        ? "bg-white/10 text-white shadow-sm"
+                                        : "text-muted-foreground hover:text-white"
+                                        }`}
+                                >
+                                    Yesterday
+                                </button>
                             </div>
                         </div>
 

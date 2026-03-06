@@ -199,7 +199,6 @@ export default function HabitsToday() {
 
             setCelebratingId(habit.id);
             setTimeout(() => setCelebratingId(null), 1200);
-            logSquadEvent(user.id, 'habit_completed', { habit_name: habit.name });
 
             // Check if this was the last habit to make a perfect day
             const otherHabits = habits.filter(h => h.id !== habit.id);
