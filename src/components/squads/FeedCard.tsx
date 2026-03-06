@@ -6,7 +6,7 @@ import { EmojiReactionBar } from "./EmojiReactionBar";
 
 export interface FeedItem {
     id: string;
-    event_type: 'perfect_day' | 'calorie_target_hit' | 'streak_5' | 'joined' | 'habit_completed';
+    event_type: 'perfect_day' | 'calorie_target_hit' | 'streak_5' | 'streak_10' | 'streak_21' | 'streak_30' | 'streak_50' | 'streak_100' | 'joined' | 'habit_completed' | 'workout_completed';
     metadata: Record<string, unknown>;
     created_at: string;
     users: {
@@ -31,24 +31,35 @@ export function FeedCard({ item, currentUserId }: FeedCardProps) {
 
     switch (item.event_type) {
         case 'perfect_day':
-            narrative = `crushed a Perfect Habit Day!`;
+            narrative = `crushed a Perfect Habit Day! 🎉`;
             icon = <Flame className="w-5 h-5 text-orange-500" />;
             break;
         case 'calorie_target_hit':
-            narrative = `hit their Daily Engine Calorie Target.`;
+            narrative = `hit their Daily Calorie Target.`;
             icon = <Target className="w-5 h-5 text-brand-emerald" />;
             break;
-        case 'streak_5':
-            narrative = `hit a 5-day tracking streak!`;
+        case 'workout_completed': {
+            const act = item.metadata?.activity || "Workout";
+            const cals = item.metadata?.calories ? ` · ${item.metadata.calories} kcal` : "";
+            narrative = `logged a ${act}${cals} 💪`;
             icon = <Flame className="w-5 h-5 text-brand-emerald" />;
             break;
+        }
+        case 'streak_5':
+        case 'streak_10':
+        case 'streak_21':
+        case 'streak_30':
+        case 'streak_50':
+        case 'streak_100': {
+            const days = item.event_type.split('_')[1];
+            const habitN = item.metadata?.habit_name ? ` (${item.metadata.habit_name})` : "";
+            const milestoneEmojis: Record<string, string> = { '5': '🔥', '10': '⚡', '21': '💪', '30': '🎯', '50': '💎', '100': '👑' };
+            narrative = `hit a ${days}-day streak${habitN} ${milestoneEmojis[days] || '🔥'}`;
+            icon = <Flame className="w-5 h-5 text-amber-400" />;
+            break;
+        }
         case 'joined':
             narrative = `joined the squad.`;
-            break;
-        case 'habit_completed':
-            const habitName = item.metadata?.habit_name || "a habit";
-            narrative = `completed: ${habitName}`;
-            icon = <Target className="w-5 h-5 text-blue-400" />;
             break;
         default:
             narrative = `completed an action.`;

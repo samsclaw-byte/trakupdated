@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/client";
 
-export type SquadEventType = 'perfect_day' | 'calorie_target_hit' | 'streak_5' | 'streak_10' | 'streak_21' | 'streak_50' | 'streak_100' | 'joined' | 'habit_completed' | 'workout_completed';
+export type SquadEventType = 'perfect_day' | 'calorie_target_hit' | 'streak_5' | 'streak_10' | 'streak_21' | 'streak_30' | 'streak_50' | 'streak_100' | 'joined' | 'habit_completed' | 'workout_completed';
 
 export async function logSquadEvent(userId: string, eventType: SquadEventType, metadata: Record<string, unknown> = {}) {
     const supabase = createClient();

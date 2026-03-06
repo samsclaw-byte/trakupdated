@@ -10,6 +10,9 @@ import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import AddHabitModal from "./AddHabitModal";
 import { logSquadEvent } from "@/utils/squads";
+import { processHabitStreak, StreakMilestone } from "@/utils/streaks";
+import { StreakBadge } from "@/components/ui/StreakBadge";
+import { MilestoneCelebration } from "@/components/ui/MilestoneCelebration";
 import confetti from "canvas-confetti";
 
 // Icon mapping
@@ -68,6 +71,8 @@ export default function HabitsToday() {
     const [allDone, setAllDone] = useState(false);
     const [showAddHabit, setShowAddHabit] = useState(false);
     const [isTrakPlus, setIsTrakPlus] = useState(false);
+    const [milestone, setMilestone] = useState<{ milestone: StreakMilestone; habitName: string } | null>(null);
+    const [bestStreaks, setBestStreaks] = useState<Record<string, number>>({});
 
     const supabaseRef = useRef(createClient());
 
@@ -124,6 +129,18 @@ export default function HabitsToday() {
             const logMap: Record<string, HabitLog> = {};
             todayLogs.forEach(log => { logMap[log.habit_id] = log; });
             setLogs(logMap);
+        }
+
+        // Fetch best streaks for badge display
+        const { data: streakData } = await supabase
+            .from('habit_streaks')
+            .select('habit_id, best_streak')
+            .eq('user_id', user.id);
+
+        if (streakData) {
+            const streakMap: Record<string, number> = {};
+            streakData.forEach(s => { streakMap[s.habit_id] = s.best_streak; });
+            setBestStreaks(streakMap);
         }
 
         setIsLoading(false);
@@ -199,6 +216,17 @@ export default function HabitsToday() {
 
             setCelebratingId(habit.id);
             setTimeout(() => setCelebratingId(null), 1200);
+
+            // Process streak and check for milestone
+            const streakResult = await processHabitStreak(user.id, habit.id, habit.name);
+
+            // Update local best streak display
+            setBestStreaks(prev => ({ ...prev, [habit.id]: streakResult.bestStreak }));
+
+            // Show milestone celebration if a new one was unlocked
+            if (streakResult.newMilestone) {
+                setMilestone({ milestone: streakResult.newMilestone, habitName: habit.name });
+            }
 
             // Check if this was the last habit to make a perfect day
             const otherHabits = habits.filter(h => h.id !== habit.id);
@@ -301,6 +329,14 @@ export default function HabitsToday() {
 
     return (
         <div className="px-6 py-8 space-y-10 pb-8">
+            {/* Milestone Celebration Overlay */}
+            {milestone && (
+                <MilestoneCelebration
+                    milestone={milestone.milestone}
+                    habitName={milestone.habitName}
+                    onDismiss={() => setMilestone(null)}
+                />
+            )}
             {/* Completion Ring */}
             <div className="relative flex flex-col items-center justify-center py-4">
                 {isLoading ? (
@@ -369,6 +405,7 @@ export default function HabitsToday() {
                         const IconComponent = ICON_MAP[habit.icon] || Sparkles;
                         const isCelebrating = celebratingId === habit.id;
                         const progress = habit.target_value > 0 ? (currentValue / habit.target_value) * 100 : 0;
+                        const habitBestStreak = bestStreaks[habit.id] || 0;
 
                         return (
                             <motion.div
@@ -393,7 +430,10 @@ export default function HabitsToday() {
 
                                 {/* Name + Progress */}
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-sm">{habit.name}</h4>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h4 className="font-bold text-sm">{habit.name}</h4>
+                                        <StreakBadge bestStreak={habitBestStreak} />
+                                    </div>
                                     {habit.unit ? (
                                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                                             {currentValue}/{habit.target_value} {habit.unit}
