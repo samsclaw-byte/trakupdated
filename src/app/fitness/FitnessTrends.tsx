@@ -46,12 +46,15 @@ export default function FitnessTrends() {
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - timeframe + 1);
 
+            const endDateStr = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+            const startDateStr = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+
             const { data: workouts, error } = await supabase
                 .from("workouts")
                 .select("date, calories_burned, type")
                 .eq("user_id", user.id)
-                .gte("date", startDate.toISOString().split("T")[0])
-                .lte("date", endDate.toISOString().split("T")[0]);
+                .gte("date", startDateStr)
+                .lte("date", endDateStr);
 
             if (error) {
                 console.error("Error fetching fitness trends:", error);
@@ -76,7 +79,7 @@ export default function FitnessTrends() {
             // Build grid data
             const days = getDaysArray(timeframe);
             const mappedData = days.map(day => {
-                const dateStr = day.toISOString().split("T")[0];
+                const dateStr = new Date(day.getTime() - (day.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
                 const daysWorkouts = workouts?.filter(w => w.date === dateStr) || [];
                 return {
                     date: day,
