@@ -22,6 +22,11 @@ interface DailyData {
     calcium: number;
     iron: number;
     vitamin_c: number;
+    magnesium: number;
+    zinc: number;
+    vitamin_d: number;
+    vitamin_b12: number;
+    folate: number;
 }
 
 export default function NutritionTrends() {
@@ -34,6 +39,9 @@ export default function NutritionTrends() {
     const supabase = useMemo(() => createClient(), []);
 
     const goal = profile.daily_calories || 2400;
+    const proteinTarget = profile.weight ? Math.round(profile.weight * 1.8) : 180;
+    const carbsTarget = goal ? Math.round((goal * 0.45) / 4) : 270;
+    const fatTarget = goal ? Math.round((goal * 0.25) / 9) : 80;
 
     // MICRO_TARGETS from NutritionToday
     const MICRO_TARGETS = { sodium: 2300, potassium: 3500, calcium: 1000, magnesium: 375, iron: 14, zinc: 10, vitamin_c: 80, vitamin_d: 5, vitamin_b12: 2.5, folate: 200 };
@@ -87,7 +95,7 @@ export default function NutritionTrends() {
             for (const meal of (meals ?? [])) {
                 const dateKey = new Date(meal.created_at).toLocaleDateString('en-CA');
                 if (!dataMap[dateKey]) {
-                    dataMap[dateKey] = { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sodium: 0, potassium: 0, calcium: 0, iron: 0, vitamin_c: 0 };
+                    dataMap[dateKey] = { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sodium: 0, potassium: 0, calcium: 0, magnesium: 0, iron: 0, zinc: 0, vitamin_c: 0, vitamin_d: 0, vitamin_b12: 0, folate: 0 };
                 }
                 dataMap[dateKey].calories += (Number(meal.calories) || 0);
                 dataMap[dateKey].protein += (Number(meal.protein) || 0);
@@ -98,8 +106,13 @@ export default function NutritionTrends() {
                     dataMap[dateKey].sodium += (meal.micronutrients.sodium || 0);
                     dataMap[dateKey].potassium += (meal.micronutrients.potassium || 0);
                     dataMap[dateKey].calcium += (meal.micronutrients.calcium || 0);
+                    dataMap[dateKey].magnesium += (meal.micronutrients.magnesium || 0);
                     dataMap[dateKey].iron += (meal.micronutrients.iron || 0);
+                    dataMap[dateKey].zinc += (meal.micronutrients.zinc || 0);
                     dataMap[dateKey].vitamin_c += (meal.micronutrients.vitamin_c || 0);
+                    dataMap[dateKey].vitamin_d += (meal.micronutrients.vitamin_d || 0);
+                    dataMap[dateKey].vitamin_b12 += (meal.micronutrients.vitamin_b12 || 0);
+                    dataMap[dateKey].folate += (meal.micronutrients.folate || 0);
                 }
             }
 
@@ -126,8 +139,13 @@ export default function NutritionTrends() {
                     sodium: Math.round(entryData.sodium || 0),
                     potassium: Math.round(entryData.potassium || 0),
                     calcium: Math.round(entryData.calcium || 0),
+                    magnesium: Math.round(entryData.magnesium || 0),
                     iron: Math.round((entryData.iron || 0) * 10) / 10,
+                    zinc: Math.round((entryData.zinc || 0) * 10) / 10,
                     vitamin_c: Math.round(entryData.vitamin_c || 0),
+                    vitamin_d: Math.round((entryData.vitamin_d || 0) * 10) / 10,
+                    vitamin_b12: Math.round((entryData.vitamin_b12 || 0) * 10) / 10,
+                    folate: Math.round(entryData.folate || 0),
                 });
             }
 
@@ -161,24 +179,34 @@ export default function NutritionTrends() {
     const avgFat = Math.round(chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.fat || 0), 0) / activeDaysCount);
 
     const macroData = [
-        { name: 'Carbs', value: avgCarbs, color: '#fb923c' }, // orange-400
-        { name: 'Protein', value: avgProtein, color: '#60a5fa' }, // blue-400
-        { name: 'Fat', value: avgFat, color: '#c084fc' }, // purple-400
+        { name: 'Carbs', value: avgCarbs, color: '#fb923c', target: carbsTarget },
+        { name: 'Protein', value: avgProtein, color: '#60a5fa', target: proteinTarget },
+        { name: 'Fat', value: avgFat, color: '#c084fc', target: fatTarget },
     ].filter(d => d.value > 0);
 
     // Micro Averages for radar chart
     const avgSodium = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.sodium || 0), 0) / activeDaysCount;
     const avgPotassium = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.potassium || 0), 0) / activeDaysCount;
     const avgCalcium = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.calcium || 0), 0) / activeDaysCount;
+    const avgMagnesium = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.magnesium || 0), 0) / activeDaysCount;
     const avgIron = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.iron || 0), 0) / activeDaysCount;
+    const avgZinc = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.zinc || 0), 0) / activeDaysCount;
     const avgVitC = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.vitamin_c || 0), 0) / activeDaysCount;
+    const avgVitD = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.vitamin_d || 0), 0) / activeDaysCount;
+    const avgVitB12 = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.vitamin_b12 || 0), 0) / activeDaysCount;
+    const avgFolate = chartData.filter(d => d.calories > 0).reduce((s, d) => s + (d.folate || 0), 0) / activeDaysCount;
 
     const microData = [
-        { subject: 'Sodium', value: Math.min((avgSodium / MICRO_TARGETS.sodium) * 100, 100) || 0, fullMark: 100 },
-        { subject: 'Potassium', value: Math.min((avgPotassium / MICRO_TARGETS.potassium) * 100, 100) || 0, fullMark: 100 },
-        { subject: 'Calcium', value: Math.min((avgCalcium / MICRO_TARGETS.calcium) * 100, 100) || 0, fullMark: 100 },
-        { subject: 'Iron', value: Math.min((avgIron / MICRO_TARGETS.iron) * 100, 100) || 0, fullMark: 100 },
-        { subject: 'Vit C', value: Math.min((avgVitC / MICRO_TARGETS.vitamin_c) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Sodium (${MICRO_TARGETS.sodium}mg)`, value: Math.min((avgSodium / MICRO_TARGETS.sodium) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Potassium (${MICRO_TARGETS.potassium}mg)`, value: Math.min((avgPotassium / MICRO_TARGETS.potassium) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Calcium (${MICRO_TARGETS.calcium}mg)`, value: Math.min((avgCalcium / MICRO_TARGETS.calcium) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Magnesium (${MICRO_TARGETS.magnesium}mg)`, value: Math.min((avgMagnesium / MICRO_TARGETS.magnesium) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Iron (${MICRO_TARGETS.iron}mg)`, value: Math.min((avgIron / MICRO_TARGETS.iron) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Zinc (${MICRO_TARGETS.zinc}mg)`, value: Math.min((avgZinc / MICRO_TARGETS.zinc) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Vit C (${MICRO_TARGETS.vitamin_c}mg)`, value: Math.min((avgVitC / MICRO_TARGETS.vitamin_c) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Vit D (${MICRO_TARGETS.vitamin_d}mcg)`, value: Math.min((avgVitD / MICRO_TARGETS.vitamin_d) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Vit B12 (${MICRO_TARGETS.vitamin_b12}mcg)`, value: Math.min((avgVitB12 / MICRO_TARGETS.vitamin_b12) * 100, 100) || 0, fullMark: 100 },
+        { subject: `Folate (${MICRO_TARGETS.folate}mcg)`, value: Math.min((avgFolate / MICRO_TARGETS.folate) * 100, 100) || 0, fullMark: 100 },
     ];
 
     const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) => {
@@ -281,11 +309,19 @@ export default function NutritionTrends() {
                     <p className="text-sm text-white/30 py-8 font-medium">No macro data available yet.</p>
                 )}
 
-                <div className="flex items-center justify-center gap-6 mt-4">
+                <div className="flex items-start justify-center gap-6 mt-4">
                     {macroData.map(m => (
-                        <div key={m.name} className="flex items-center gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: m.color }} />
-                            <span className="text-xs font-bold text-white/80">{m.name}</span>
+                        <div key={m.name} className="flex flex-col items-center">
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: m.color }} />
+                                <span className="text-xs font-bold text-white/80">{m.name}</span>
+                            </div>
+                            <span className="text-xs font-medium text-white/80">{m.value}g</span>
+                            {m.name === 'Protein' && m.target && (
+                                <span className="text-[9px] uppercase tracking-widest text-[#60a5fa] font-bold mt-1">
+                                    {Math.round((m.value / m.target) * 100)}% of goal
+                                </span>
+                            )}
                         </div>
                     ))}
                 </div>
