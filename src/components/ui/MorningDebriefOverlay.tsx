@@ -27,8 +27,8 @@ export function MorningDebriefOverlay() {
             const todayStr = new Date().toLocaleDateString();
             const lastDebrief = localStorage.getItem("trak_last_debrief_date");
 
-            // Uncomment to disable "once a day" lock during testing
-            // if (lastDebrief === todayStr) return;
+            // If they already saw it today, don't show it again.
+            if (lastDebrief === todayStr) return;
 
             // Trigger overlay
             setPhase("LOADING");
