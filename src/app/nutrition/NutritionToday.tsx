@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine } from "lucide-react";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine, Crown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -20,12 +20,21 @@ interface Meal {
     fibre: number;
     sugar: number;
     created_at: string;
+    micronutrients?: {
+        sodium: number;
+        potassium: number;
+        calcium: number;
+        iron: number;
+        vitamin_c: number;
+        vitamin_d: number;
+    } | null;
 }
 
 interface UserProfile {
     daily_calories: number;
     weight: number;
     name: string;
+    is_trak_plus: boolean;
 }
 
 export default function NutritionToday() {
@@ -38,6 +47,7 @@ export default function NutritionToday() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [isSnapModalOpen, setIsSnapModalOpen] = useState(false);
+    const [macroView, setMacroView] = useState<'macro' | 'micro'>('macro');
 
     const supabaseRef = useRef(createClient());
     const router = useRouter();
@@ -87,7 +97,7 @@ export default function NutritionToday() {
 
             const { data: userProfile } = await supabase
                 .from('users')
-                .select('daily_calories, weight, name')
+                .select('daily_calories, weight, name, is_trak_plus')
                 .eq('id', user.id)
                 .single();
 
@@ -220,6 +230,18 @@ export default function NutritionToday() {
     const fibreConsumed = Math.round(meals.reduce((sum, meal) => sum + (Number(meal.fibre) || 0), 0));
     const percentage = Math.min((consumed / goal) * 100, 100);
 
+    // Micronutrient daily totals
+    const sodiumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.sodium || 0), 0));
+    const potassiumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.potassium || 0), 0));
+    const calciumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.calcium || 0), 0));
+    const ironTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.iron || 0), 0) * 10) / 10;
+    const vitCTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.vitamin_c || 0), 0));
+    const vitDTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.vitamin_d || 0), 0) * 10) / 10;
+
+    // Target values (EU Daily Reference Intakes)
+    const MICRO_TARGETS = { sodium: 2300, potassium: 3500, calcium: 1000, iron: 14, vitamin_c: 80, vitamin_d: 5 };
+    const isTrakPlus = profile?.is_trak_plus || false;
+
     return (
         <div className="px-6 py-8 space-y-12 pb-8">
             {/* Date Navigator */}
@@ -269,13 +291,60 @@ export default function NutritionToday() {
                                 <span className="text-muted-foreground text-xs uppercase tracking-[0.2em] font-medium">kcal of {goal}</span>
                             </div>
                         </div>
-                        <div className="grid grid-cols-5 w-full max-w-md mt-12 gap-2">
-                            <StatsCard label="Protein" value={`${proteinConsumed}g`} progress={(proteinConsumed / proteinTarget) * 100} />
-                            <StatsCard label="Carbs" value={`${carbsConsumed}g`} progress={(carbsConsumed / carbsTarget) * 100} />
-                            <StatsCard label="Fat" value={`${fatConsumed}g`} progress={(fatConsumed / fatTarget) * 100} />
-                            <StatsCard label="Fibre" value={`${fibreConsumed}g`} progress={(fibreConsumed / fibreTarget) * 100} />
-                            <StatsCard label="Meals" value={`${meals.length}`} progress={100} />
+                        {/* Macro/Micro Toggle */}
+                        <div className="flex gap-1 bg-white/5 p-1 rounded-2xl w-48 mx-auto mb-4">
+                            <button
+                                onClick={() => setMacroView('macro')}
+                                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${macroView === 'macro' ? 'bg-white/10 text-white' : 'text-muted-foreground'}`}
+                            >
+                                Macro
+                            </button>
+                            <button
+                                onClick={() => isTrakPlus ? setMacroView('micro') : null}
+                                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${macroView === 'micro' ? 'bg-white/10 text-white' : 'text-muted-foreground'} ${!isTrakPlus ? 'opacity-50' : ''}`}
+                            >
+                                {!isTrakPlus && <Crown className="w-3 h-3 text-amber-400" />}
+                                Micro
+                            </button>
                         </div>
+
+                        <AnimatePresence mode="wait">
+                            {macroView === 'macro' ? (
+                                <motion.div
+                                    key="macro"
+                                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
+                                    className="grid grid-cols-5 w-full max-w-md gap-2"
+                                >
+                                    <StatsCard label="Protein" value={`${proteinConsumed}g`} progress={(proteinConsumed / proteinTarget) * 100} />
+                                    <StatsCard label="Carbs" value={`${carbsConsumed}g`} progress={(carbsConsumed / carbsTarget) * 100} />
+                                    <StatsCard label="Fat" value={`${fatConsumed}g`} progress={(fatConsumed / fatTarget) * 100} />
+                                    <StatsCard label="Fibre" value={`${fibreConsumed}g`} progress={(fibreConsumed / fibreTarget) * 100} />
+                                    <StatsCard label="Meals" value={`${meals.length}`} progress={100} />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="micro"
+                                    initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                                    className="relative w-full"
+                                >
+                                    {!isTrakPlus && (
+                                        <div className="absolute inset-0 z-10 backdrop-blur-sm bg-black/40 rounded-2xl flex flex-col items-center justify-center gap-2">
+                                            <Crown className="w-6 h-6 text-amber-400" />
+                                            <p className="text-xs font-bold text-amber-400">Trak+ Feature</p>
+                                            <p className="text-[10px] text-white/50 text-center px-8">Upgrade to see micronutrient tracking</p>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <MicroCard label="Sodium" value={sodiumTotal} unit="mg" target={MICRO_TARGETS.sodium} />
+                                        <MicroCard label="Potassium" value={potassiumTotal} unit="mg" target={MICRO_TARGETS.potassium} />
+                                        <MicroCard label="Calcium" value={calciumTotal} unit="mg" target={MICRO_TARGETS.calcium} />
+                                        <MicroCard label="Iron" value={ironTotal} unit="mg" target={MICRO_TARGETS.iron} />
+                                        <MicroCard label="Vit C" value={vitCTotal} unit="mg" target={MICRO_TARGETS.vitamin_c} />
+                                        <MicroCard label="Vit D" value={vitDTotal} unit="mcg" target={MICRO_TARGETS.vitamin_d} />
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </>
                 )}
             </div>
@@ -433,6 +502,22 @@ function StatsCard({ label, value, progress }: { label: string; value: string; p
                 <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(progress, 100)}%` }}
                     transition={{ duration: 1, delay: 1 }} className="h-full bg-brand-emerald" />
             </div>
+        </div>
+    );
+}
+
+function MicroCard({ label, value, unit, target }: { label: string; value: number; unit: string; target: number }) {
+    const pct = Math.min((value / target) * 100, 100);
+    const color = pct >= 80 ? "bg-brand-emerald" : pct >= 40 ? "bg-amber-400" : "bg-white/20";
+    return (
+        <div className="flex flex-col items-center gap-1 bg-white/[0.03] border border-white/5 rounded-2xl p-3">
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">{label}</span>
+            <span className="text-base font-bold leading-tight">{value}<span className="text-[9px] text-muted-foreground ml-0.5">{unit}</span></span>
+            <div className="w-full h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${color}`} />
+            </div>
+            <span className="text-[8px] text-white/20">{target}{unit} goal</span>
         </div>
     );
 }

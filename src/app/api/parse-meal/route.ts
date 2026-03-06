@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
         const systemPrompt = `You are a strict, expert nutritional analyst.
 The user will give you a natural language description and/or an image of a meal they ate.
-You must estimate the absolute best guess for the nutritional macros of that meal.
+You must estimate the absolute best guess for the nutritional content of that meal.
 You MUST reply ONLY with a valid JSON object matching this exact structure, with NO surrounding markdown or text:
 {
   "title": string (3-5 words summarizing the dish),
@@ -39,8 +39,17 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
   "carbs": number,
   "fat": number,
   "fibre": number,
-  "sugar": number
-}`;
+  "sugar": number,
+  "micronutrients": {
+    "sodium": number (mg),
+    "potassium": number (mg),
+    "calcium": number (mg),
+    "iron": number (mg),
+    "vitamin_c": number (mg),
+    "vitamin_d": number (mcg)
+  }
+}
+All values should be realistic estimates for a typical portion of the food described.`;
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
@@ -130,6 +139,7 @@ You MUST reply ONLY with a valid JSON object matching this exact structure, with
                 fat: parsedMacros.fat,
                 fibre: parsedMacros.fibre,
                 sugar: parsedMacros.sugar,
+                micronutrients: parsedMacros.micronutrients || null,
                 ...(date ? { created_at: new Date(date).toISOString() } : {}),
             })
             .select()
