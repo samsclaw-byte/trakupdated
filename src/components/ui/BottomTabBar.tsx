@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flame, CheckCircle2, User, Users } from "lucide-react";
+import { Flame, CheckCircle2, User, Users, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const tabs = [
     { href: "/nutrition", label: "Nutrition", icon: Flame },
+    { href: "/fitness", label: "Fitness", icon: Activity },
     { href: "/habits", label: "Habits", icon: CheckCircle2 },
     { href: "/squads", label: "Squads", icon: Users },
     { href: "/profile", label: "Profile", icon: User },

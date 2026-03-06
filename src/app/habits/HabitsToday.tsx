@@ -8,7 +8,6 @@ import {
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
-import ExerciseSheet from "./ExerciseSheet";
 import AddHabitModal from "./AddHabitModal";
 import { logSquadEvent } from "@/utils/squads";
 import confetti from "canvas-confetti";
@@ -59,7 +58,6 @@ const DEFAULT_HABITS: Omit<HabitDefinition, 'id'>[] = [
     { name: "Creatine", icon: "Zap", color: "yellow-400", target_value: 5, unit: "g", increment_by: 5, track_type: "count", sort_order: 1 },
     { name: "Water", icon: "Droplets", color: "blue-400", target_value: 8, unit: "glasses", increment_by: 1, track_type: "count", sort_order: 2 },
     { name: "Fruit", icon: "Apple", color: "orange-400", target_value: 2, unit: "portions", increment_by: 1, track_type: "count", sort_order: 3 },
-    { name: "Exercise", icon: "Dumbbell", color: "emerald", target_value: 1, unit: null, increment_by: 1, track_type: "exercise", sort_order: 4 },
 ];
 
 export default function HabitsToday() {
@@ -68,7 +66,6 @@ export default function HabitsToday() {
     const [isLoading, setIsLoading] = useState(true);
     const [celebratingId, setCelebratingId] = useState<string | null>(null);
     const [allDone, setAllDone] = useState(false);
-    const [showExercise, setShowExercise] = useState(false);
     const [showAddHabit, setShowAddHabit] = useState(false);
     const [isTrakPlus, setIsTrakPlus] = useState(false);
 
@@ -149,11 +146,6 @@ export default function HabitsToday() {
     }, [logs, habits]);
 
     const handleIncrement = async (habit: HabitDefinition) => {
-        if (habit.track_type === 'exercise') {
-            setShowExercise(true);
-            return;
-        }
-
         const supabase = supabaseRef.current;
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -305,79 +297,6 @@ export default function HabitsToday() {
         setHabits(prev => prev.filter(h => h.id !== habitId));
     };
 
-    const handleExerciseLog = async (exerciseType: string, duration: number) => {
-        const supabase = supabaseRef.current;
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const exerciseHabit = habits.find(h => h.track_type === 'exercise');
-        if (!exerciseHabit) return;
-
-        const today = new Date().toISOString().split('T')[0];
-        const currentLog = logs[exerciseHabit.id];
-
-        if (currentLog) {
-            await supabase
-                .from('habit_logs')
-                .update({
-                    value: 1,
-                    completed: true,
-                    completed_at: new Date().toISOString(),
-                    metadata: { type: exerciseType, duration },
-                })
-                .eq('id', currentLog.id);
-        } else {
-            await supabase
-                .from('habit_logs')
-                .insert({
-                    user_id: user.id,
-                    habit_id: exerciseHabit.id,
-                    date: today,
-                    value: 1,
-                    completed: true,
-                    completed_at: new Date().toISOString(),
-                    metadata: { type: exerciseType, duration },
-                });
-        }
-
-        setLogs(prev => ({
-            ...prev,
-            [exerciseHabit.id]: {
-                ...(prev[exerciseHabit.id] || { id: 'temp', habit_id: exerciseHabit.id }),
-                value: 1,
-                completed: true,
-                metadata: { type: exerciseType, duration },
-            }
-        }));
-
-        setCelebratingId(exerciseHabit.id);
-        setTimeout(() => setCelebratingId(null), 1200);
-        setShowExercise(false);
-
-        if (!currentLog?.completed) {
-            // Haptic
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-            logSquadEvent(user.id, 'habit_completed', { habit_name: `${exerciseType} (${duration}m)` });
-
-            const otherHabits = habits.filter(h => h.id !== exerciseHabit.id);
-            const othersCompleted = otherHabits.every(h => logs[h.id]?.completed);
-            if (othersCompleted) {
-                logSquadEvent(user.id, 'perfect_day');
-                if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                    navigator.vibrate([100, 50, 100, 50, 200]);
-                }
-                confetti({
-                    particleCount: 150,
-                    spread: 100,
-                    origin: { y: 0.6 },
-                    colors: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
-                });
-            }
-        }
-    };
-
     const completedCount = habits.filter(h => logs[h.id]?.completed).length;
     const completionPct = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
 
@@ -476,11 +395,7 @@ export default function HabitsToday() {
                                 {/* Name + Progress */}
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-bold text-sm">{habit.name}</h4>
-                                    {habit.track_type === 'exercise' && isCompleted && log?.metadata ? (
-                                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                                            {(log.metadata as { type?: string; duration?: number }).type} • {(log.metadata as { duration?: number }).duration}min
-                                        </p>
-                                    ) : habit.unit ? (
+                                    {habit.unit ? (
                                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                                             {currentValue}/{habit.target_value} {habit.unit}
                                         </p>
@@ -588,13 +503,6 @@ export default function HabitsToday() {
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Track anything</p>
                 </div>
             </button>
-
-            {/* Exercise Sheet */}
-            <ExerciseSheet
-                isOpen={showExercise}
-                onClose={() => setShowExercise(false)}
-                onLog={handleExerciseLog}
-            />
 
             {/* Add Habit Modal */}
             <AddHabitModal

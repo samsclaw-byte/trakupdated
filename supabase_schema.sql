@@ -290,3 +290,34 @@ BEGIN
   ORDER BY total_score DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 10. Create workouts table
+create table public.workouts (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.users(id) not null,
+  activity_type text not null,
+  intensity text not null, -- 'Light', 'Medium', 'Intense'
+  duration_minutes integer not null,
+  calories_burned integer not null,
+  date date not null default current_date,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Set up RLS for workouts
+alter table public.workouts enable row level security;
+
+create policy "Users can view own workouts"
+  on public.workouts for select
+  using ( auth.uid() = user_id );
+
+create policy "Users can insert own workouts"
+  on public.workouts for insert
+  with check ( auth.uid() = user_id );
+
+create policy "Users can update own workouts"
+  on public.workouts for update
+  using ( auth.uid() = user_id );
+
+create policy "Users can delete own workouts"
+  on public.workouts for delete
+  using ( auth.uid() = user_id );
