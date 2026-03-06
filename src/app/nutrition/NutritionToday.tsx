@@ -235,6 +235,7 @@ export default function NutritionToday() {
     const fatConsumed = Math.round(meals.reduce((sum, meal) => sum + (Number(meal.fat) || 0), 0));
     const fibreConsumed = Math.round(meals.reduce((sum, meal) => sum + (Number(meal.fibre) || 0), 0));
     const percentage = Math.min((consumed / goal) * 100, 100);
+    const overfillPercentage = Math.min(Math.max(((consumed / goal) * 100) - 100, 0), 100);
 
     // Micronutrient daily totals
     const sodiumTotal = Math.round(meals.reduce((s, m) => s + (m.micronutrients?.sodium || 0), 0));
@@ -306,6 +307,16 @@ export default function NutritionToday() {
                                     animate={{ strokeDasharray: `${percentage * 2.83}, 283` }}
                                     transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
                                 />
+                                {overfillPercentage > 0 && (
+                                    <motion.circle
+                                        cx="50" cy="50" r="45"
+                                        className="stroke-red-500 fill-none"
+                                        strokeWidth="8" strokeLinecap="round"
+                                        initial={{ strokeDasharray: "0, 283" }}
+                                        animate={{ strokeDasharray: `${overfillPercentage * 2.83}, 283` }}
+                                        transition={{ duration: 1.5, ease: "easeOut", delay: 2.0 }}
+                                    />
+                                )}
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                                 <motion.span initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-5xl font-bold tracking-tighter">

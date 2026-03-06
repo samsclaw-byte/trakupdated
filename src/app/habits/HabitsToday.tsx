@@ -440,9 +440,13 @@ export default function HabitsToday() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap mb-1">
                                         <h4 className="font-bold text-sm tracking-wide">{habit.name}</h4>
-                                        {habitActiveStreak >= 2 && (
+                                        {habitActiveStreak >= 1 ? (
                                             <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded-md border border-orange-400/20 shadow-[0_0_10px_rgba(251,146,60,0.1)]">
-                                                <Flame className="w-3 h-3 text-orange-500" /> {habitActiveStreak} Day{habitActiveStreak > 1 ? 's' : ''}
+                                                <Flame className="w-3 h-3 text-orange-500" /> {habitActiveStreak} Day{habitActiveStreak !== 1 ? 's' : ''}
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded-md border border-white/10">
+                                                {habitActiveStreak} Days
                                             </span>
                                         )}
                                         <StreakBadge bestStreak={habitBestStreak} />

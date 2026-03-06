@@ -43,16 +43,16 @@ export default function NutritionTrends() {
     const MICRO_TARGETS = { sodium: 2300, potassium: 3500, calcium: 1000, magnesium: 375, iron: 14, zinc: 10, vitamin_c: 80, vitamin_d: 5, vitamin_b12: 2.5, folate: 200 };
 
     const METRICS = [
-        { id: 'calories', label: 'Calories', goal: goal, unit: 'kcal', color: 'bg-brand-emerald', text: 'text-brand-emerald', micro: false },
-        { id: 'protein', label: 'Protein', goal: proteinTarget, unit: 'g', color: 'bg-blue-400', text: 'text-blue-400', micro: false },
-        { id: 'carbs', label: 'Carbs', goal: carbsTarget, unit: 'g', color: 'bg-orange-400', text: 'text-orange-400', micro: false },
-        { id: 'fat', label: 'Fat', goal: fatTarget, unit: 'g', color: 'bg-purple-400', text: 'text-purple-400', micro: false },
-        { id: 'fibre', label: 'Fibre', goal: 30, unit: 'g', color: 'bg-yellow-400', text: 'text-yellow-400', micro: false },
-        { id: 'sodium', label: 'Sodium', goal: MICRO_TARGETS.sodium, unit: 'mg', color: 'bg-sky-400', text: 'text-sky-400', micro: true },
-        { id: 'potassium', label: 'Potassium', goal: MICRO_TARGETS.potassium, unit: 'mg', color: 'bg-yellow-400', text: 'text-yellow-400', micro: true },
-        { id: 'calcium', label: 'Calcium', goal: MICRO_TARGETS.calcium, unit: 'mg', color: 'bg-slate-200', text: 'text-slate-200', micro: true },
-        { id: 'iron', label: 'Iron', goal: MICRO_TARGETS.iron, unit: 'mg', color: 'bg-red-400', text: 'text-red-400', micro: true },
-        { id: 'vitamin_c', label: 'Vit C', goal: MICRO_TARGETS.vitamin_c, unit: 'mg', color: 'bg-orange-500', text: 'text-orange-500', micro: true },
+        { id: 'calories', label: 'Calories', goal: goal, unit: 'kcal', color: 'bg-brand-emerald', text: 'text-brand-emerald', micro: false, goodToExceed: false },
+        { id: 'protein', label: 'Protein', goal: proteinTarget, unit: 'g', color: 'bg-blue-400', text: 'text-blue-400', micro: false, goodToExceed: true },
+        { id: 'carbs', label: 'Carbs', goal: carbsTarget, unit: 'g', color: 'bg-orange-400', text: 'text-orange-400', micro: false, goodToExceed: false },
+        { id: 'fat', label: 'Fat', goal: fatTarget, unit: 'g', color: 'bg-purple-400', text: 'text-purple-400', micro: false, goodToExceed: false },
+        { id: 'fibre', label: 'Fibre', goal: 30, unit: 'g', color: 'bg-yellow-400', text: 'text-yellow-400', micro: false, goodToExceed: true },
+        { id: 'sodium', label: 'Sodium', goal: MICRO_TARGETS.sodium, unit: 'mg', color: 'bg-sky-400', text: 'text-sky-400', micro: true, goodToExceed: false },
+        { id: 'potassium', label: 'Potassium', goal: MICRO_TARGETS.potassium, unit: 'mg', color: 'bg-yellow-400', text: 'text-yellow-400', micro: true, goodToExceed: true },
+        { id: 'calcium', label: 'Calcium', goal: MICRO_TARGETS.calcium, unit: 'mg', color: 'bg-slate-200', text: 'text-slate-200', micro: true, goodToExceed: true },
+        { id: 'iron', label: 'Iron', goal: MICRO_TARGETS.iron, unit: 'mg', color: 'bg-red-400', text: 'text-red-400', micro: true, goodToExceed: true },
+        { id: 'vitamin_c', label: 'Vit C', goal: MICRO_TARGETS.vitamin_c, unit: 'mg', color: 'bg-orange-500', text: 'text-orange-500', micro: true, goodToExceed: true },
     ];
 
     useEffect(() => {
@@ -123,7 +123,7 @@ export default function NutritionTrends() {
             const result: DailyData[] = [];
             let streakCount = 0;
 
-            for (let i = actualDays - 1; i >= 0; i--) {
+            for (let i = 0; i < actualDays; i++) {
                 const d = new Date(today);
                 d.setDate(today.getDate() - i);
                 const dateKey = d.toLocaleDateString('en-CA');
@@ -228,10 +228,10 @@ export default function NutritionTrends() {
                     </div>
                     {avgValue > 0 && (
                         <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-                            avgValue > activeMetric.goal ? "bg-red-500/10" : "bg-brand-emerald/10"
+                            avgValue > activeMetric.goal ? (activeMetric.goodToExceed ? "bg-brand-emerald/10" : "bg-red-500/10") : (activeMetric.goodToExceed ? "bg-red-500/10" : "bg-brand-emerald/10")
                         )}>
-                            <TrendingUp className={cn("w-3 h-3", avgValue > activeMetric.goal ? "text-red-500" : "text-brand-emerald")} />
-                            <span className={cn("text-[10px] font-bold", avgValue > activeMetric.goal ? "text-red-500" : "text-brand-emerald")}>
+                            <TrendingUp className={cn("w-3 h-3", avgValue > activeMetric.goal ? (activeMetric.goodToExceed ? "text-brand-emerald" : "text-red-500") : (activeMetric.goodToExceed ? "text-red-500" : "text-brand-emerald"))} />
+                            <span className={cn("text-[10px] font-bold", avgValue > activeMetric.goal ? (activeMetric.goodToExceed ? "text-brand-emerald" : "text-red-500") : (activeMetric.goodToExceed ? "text-red-500" : "text-brand-emerald"))}>
                                 {avgValue > activeMetric.goal
                                     ? `${Math.round(((avgValue - activeMetric.goal) / activeMetric.goal) * 100)}% over`
                                     : `${Math.round(((activeMetric.goal - avgValue) / activeMetric.goal) * 100)}% under`}
@@ -275,7 +275,7 @@ export default function NutritionTrends() {
                                         className={cn(
                                             "w-[90%] rounded-t-lg transition-all relative overflow-hidden",
                                             val > activeMetric.goal
-                                                ? "bg-red-400/50 group-hover:bg-red-400/80"
+                                                ? (activeMetric.goodToExceed ? `${activeMetric.color.replace('bg-', 'bg-')}/50 group-hover:${activeMetric.color.replace('bg-', 'bg-')}/80` : "bg-red-400/50 group-hover:bg-red-400/80")
                                                 : val > 0
                                                     ? `${activeMetric.color.replace('bg-', 'bg-')}/50 group-hover:${activeMetric.color.replace('bg-', 'bg-')}/80`
                                                     : "bg-white/5"

@@ -58,7 +58,7 @@ export function PillarProgressCards({ nutritionStreak, habitsStreak, fitnessStre
                                     <span className="text-sm font-bold text-white">{pillar.label}</span>
                                     {badge && (
                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${BADGE_CONFIG[badge.milestone].colorClass}`}>
-                                            {badge.emoji} {badge.label}
+                                            {pillar.key === 'nutrition' ? badge.emoji : (pillar.key === 'habits' ? (badge.milestone >= 5 ? '🔥' : '✅') : (badge.milestone >= 5 ? '⚡' : '💪'))} {badge.label}
                                         </span>
                                     )}
                                 </div>

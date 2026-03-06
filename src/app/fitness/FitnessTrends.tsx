@@ -2,8 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Activity, Flame, Trophy } from "lucide-react";
+import { Activity, Flame, Trophy, Dumbbell, Bike, Waves, MapPin as PersonStanding } from "lucide-react";
 import { motion } from "framer-motion";
+
+const getIconForWorkout = (type?: string | null) => {
+    switch (type?.toLowerCase()) {
+        case 'running': return <PersonStanding className="w-4 h-4 text-black" />;
+        case 'swimming': return <Waves className="w-4 h-4 text-black" />;
+        case 'cycling': return <Bike className="w-4 h-4 text-black" />;
+        case 'weights': return <Dumbbell className="w-4 h-4 text-black" />;
+        default: return <Activity className="w-4 h-4 text-black" />;
+    }
+};
 
 export default function FitnessTrends() {
     const [timeframe, setTimeframe] = useState<7 | 28>(7);
@@ -12,13 +22,13 @@ export default function FitnessTrends() {
         totalCalories: 0,
         activeDays: 0,
     });
-    const [dailyData, setDailyData] = useState<{ date: Date; calories: number; didWorkout: boolean }[]>([]);
+    const [dailyData, setDailyData] = useState<{ date: Date; calories: number; didWorkout: boolean; type: string | null }[]>([]);
 
     // We import date-fns dynamically or just use simple math. 
     // For simplicity, we'll write a small helper since we can't guarantee date-fns is installed.
     const getDaysArray = (numDays: number) => {
         const arr = [];
-        for (let i = numDays - 1; i >= 0; i--) {
+        for (let i = 0; i < numDays; i++) {
             const d = new Date();
             d.setDate(d.getDate() - i);
             arr.push(d);
@@ -38,7 +48,7 @@ export default function FitnessTrends() {
 
             const { data: workouts, error } = await supabase
                 .from("workouts")
-                .select("date, calories_burned")
+                .select("date, calories_burned, type")
                 .eq("user_id", user.id)
                 .gte("date", startDate.toISOString().split("T")[0])
                 .lte("date", endDate.toISOString().split("T")[0]);
@@ -71,7 +81,8 @@ export default function FitnessTrends() {
                 return {
                     date: day,
                     calories: daysWorkouts.reduce((sum, w) => sum + w.calories_burned, 0),
-                    didWorkout: daysWorkouts.length > 0
+                    didWorkout: daysWorkouts.length > 0,
+                    type: daysWorkouts.length > 0 ? daysWorkouts[0].type : null
                 };
             });
 
@@ -152,7 +163,7 @@ export default function FitnessTrends() {
                                     : "bg-white/5 border border-white/10"
                                     }`}
                             >
-                                {day.didWorkout && <Activity className="w-4 h-4 text-black" />}
+                                {day.didWorkout && getIconForWorkout(day.type)}
                             </motion.div>
                         </div>
                     ))}
