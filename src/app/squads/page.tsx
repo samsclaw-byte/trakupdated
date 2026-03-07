@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Key, X, Loader2, Trophy, Activity, Share2, Crown } from "lucide-react";
+import { Users, Plus, Key, X, Loader2, Trophy, Activity, Share2, Crown, LogOut } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 import { FeedCard, FeedItem } from "@/components/squads/FeedCard";
@@ -474,6 +474,29 @@ function SquadsContent() {
         }
     };
 
+    const handleLeaveSquad = async () => {
+        if (!activeSquad || !currentUserId) return;
+        const confirmLeave = window.confirm(`Are you sure you want to leave "${activeSquad.name}"?`);
+        if (!confirmLeave) return;
+
+        setIsActionLoading(true);
+        const { error } = await supabase
+            .from('squad_members')
+            .delete()
+            .eq('squad_id', activeSquad.id)
+            .eq('user_id', currentUserId);
+
+        if (error) {
+            console.error('[Squads] Failed to leave squad:', error.message);
+            alert(`Error: ${error.message}`);
+        } else {
+            console.log('[Squads] Successfully left squad:', activeSquad.name);
+            setActiveSquadIndex(0); // Safely reset back to the first squad in the list
+            await fetchSquads();
+        }
+        setIsActionLoading(false);
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-brand-black text-white pb-32">
             {/* Header */}
@@ -499,6 +522,14 @@ function SquadsContent() {
                         <p className="text-xs font-bold font-mono tracking-widest text-brand-emerald mt-1">CODE: {activeSquad?.join_code}</p>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleLeaveSquad}
+                            disabled={isActionLoading}
+                            className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all disabled:opacity-50"
+                            title="Leave squad"
+                        >
+                            {isActionLoading ? <Loader2 className="w-4 h-4 animate-spin text-brand-emerald" /> : <LogOut className="w-4 h-4" />}
+                        </button>
                         <button
                             onClick={handleShareInvite}
                             className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
