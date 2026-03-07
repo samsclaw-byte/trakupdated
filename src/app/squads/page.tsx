@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Key, X, Loader2, Trophy, Activity } from "lucide-react";
+import { Users, Plus, Key, X, Loader2, Trophy, Activity, Share2, Crown } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 import { FeedCard, FeedItem } from "@/components/squads/FeedCard";
@@ -54,17 +54,23 @@ export default function SquadsPage() {
     const [isActionLoading, setIsActionLoading] = useState(false);
 
     // Dashboard State
+    const [activeSquadIndex, setActiveSquadIndex] = useState(0);
     const [activeTab, setActiveTab] = useState<'feed' | 'leaderboard' | 'members'>('feed');
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
     const [squadMembers, setSquadMembers] = useState<SquadMember[]>([]);
     const [isDataLoading, setIsDataLoading] = useState(false);
+    const [isTrakPlus, setIsTrakPlus] = useState(false);
 
     const fetchSquads = useCallback(async () => {
         setIsLoadingInit(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         setCurrentUserId(user.id);
+
+        // Check Trak+ status
+        const { data: profile } = await supabase.from('users').select('is_trak_plus').eq('id', user.id).single();
+        setIsTrakPlus(profile?.is_trak_plus || false);
 
         const { data, error } = await supabase
             .from('squad_members')
@@ -172,24 +178,24 @@ export default function SquadsPage() {
     }, [activeTab]);
 
     useEffect(() => {
-        if (squads.length > 0) {
-            fetchDashboardData(squads[0].id);
+        if (squads.length > 0 && squads[activeSquadIndex]) {
+            fetchDashboardData(squads[activeSquadIndex].id);
         }
-    }, [squads, activeTab, fetchDashboardData]);
+    }, [squads, activeSquadIndex, activeTab, fetchDashboardData]);
 
     // Realtime Polling for the Feed
     useEffect(() => {
-        const activeSquad = squads[0];
-        if (!activeSquad || activeTab !== 'feed') return;
+        const currentSquad = squads[activeSquadIndex];
+        if (!currentSquad || activeTab !== 'feed') return;
 
         // Subscribe to feed inserts
         const channel = supabase.channel('squad-feed-changes')
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'squad_feed', filter: `squad_id=eq.${activeSquad.id}` },
+                { event: 'INSERT', schema: 'public', table: 'squad_feed', filter: `squad_id=eq.${currentSquad.id}` },
                 (payload) => {
                     // Refetch neatly (could also manually inject into state, but refetch guarantees we get the joined user data + reactions)
-                    fetchDashboardData(activeSquad.id);
+                    fetchDashboardData(currentSquad.id);
                 }
             )
             .on(
@@ -197,7 +203,7 @@ export default function SquadsPage() {
                 { event: '*', schema: 'public', table: 'squad_reactions' },
                 (payload) => {
                     // We just refetch the feed to update reaction counts globally
-                    fetchDashboardData(activeSquad.id);
+                    fetchDashboardData(currentSquad.id);
                 }
             )
             .subscribe();
@@ -205,12 +211,16 @@ export default function SquadsPage() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [squads, activeTab, fetchDashboardData, supabase]);
+    }, [squads, activeSquadIndex, activeTab, fetchDashboardData, supabase]);
 
     const generateJoinCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const handleCreateSquad = async () => {
         if (!squadName.trim() || !currentUserId) return;
+        if (squads.length >= maxSquads) {
+            alert(isTrakPlus ? 'You have reached the maximum of 5 squads.' : 'Free accounts can join up to 2 squads. Upgrade to Trak+ for 5!');
+            return;
+        }
         setIsActionLoading(true);
         const code = generateJoinCode();
 
@@ -232,6 +242,10 @@ export default function SquadsPage() {
 
     const handleJoinSquad = async () => {
         if (!joinCode.trim() || !currentUserId) return;
+        if (squads.length >= maxSquads) {
+            alert(isTrakPlus ? 'You have reached the maximum of 5 squads.' : 'Free accounts can join up to 2 squads. Upgrade to Trak+ for 5!');
+            return;
+        }
         setIsActionLoading(true);
 
         const { data: foundSquad, error: findError } = await supabase
@@ -403,17 +417,52 @@ export default function SquadsPage() {
     }
 
     // --- RENDER SQUAD DASHBOARD ---
-    const activeSquad = squads[0];
+    const activeSquad = squads[activeSquadIndex] || squads[0];
+    const maxSquads = isTrakPlus ? 5 : 2;
+
+    const handleShareInvite = async () => {
+        const text = `Join my Trak squad '${activeSquad.name}'! Use code: ${activeSquad.join_code}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Join my Trak Squad', text });
+            } catch { /* user cancelled */ }
+        } else {
+            await navigator.clipboard.writeText(activeSquad.join_code);
+            alert('Join code copied to clipboard!');
+        }
+    };
 
     return (
         <div className="flex flex-col min-h-screen bg-brand-black text-white pb-32">
             {/* Header */}
             <div className="px-6 pt-12 pb-4 border-b border-white/5 sticky top-0 bg-brand-black/90 backdrop-blur-xl z-40">
+                {/* Multi-squad pill switcher */}
+                {squads.length > 1 && (
+                    <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar">
+                        {squads.map((s, i) => (
+                            <button
+                                key={s.id}
+                                onClick={() => setActiveSquadIndex(i)}
+                                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${i === activeSquadIndex ? 'bg-brand-emerald text-brand-black' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                            >
+                                {s.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">{activeSquad?.name}</h1>
                         <p className="text-xs font-bold font-mono tracking-widest text-brand-emerald mt-1">CODE: {activeSquad?.join_code}</p>
                     </div>
+                    <button
+                        onClick={handleShareInvite}
+                        className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
+                        title="Share invite code"
+                    >
+                        <Share2 className="w-4 h-4 text-brand-emerald" />
+                    </button>
                 </div>
 
                 {/* Sub-navigation Toggles */}
@@ -535,8 +584,10 @@ export default function SquadsPage() {
                                 <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-3">Scoring System</p>
                                 <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
                                     <span>✅ Habit Completion</span><span className="text-right font-mono font-bold text-white/50">+5 pts</span>
+                                    <span>🏋️ Workout Logged</span><span className="text-right font-mono font-bold text-white/50">+50 pts</span>
                                     <span>🎯 Calorie Target Hit</span><span className="text-right font-mono font-bold text-white/50">+50 pts</span>
                                     <span>⭐ Perfect Habit Day</span><span className="text-right font-mono font-bold text-white/50">+25 pts</span>
+                                    <span>🔱 Trifecta Bonus</span><span className="text-right font-mono font-bold text-white/50">+10 pts</span>
                                     <span>🔥 Reaction Given</span><span className="text-right font-mono font-bold text-white/50">+2 pts</span>
                                 </div>
                             </div>
@@ -574,6 +625,8 @@ export default function SquadsPage() {
                                         nutritionStreak={0}
                                         habitsStreak={member.habitsStreak}
                                         fitnessStreak={member.fitnessStreak}
+                                        tappable={true}
+                                        name={name}
                                     />
                                     <p className="text-[10px] text-muted-foreground text-center mt-1.5">{name}</p>
                                 </motion.div>

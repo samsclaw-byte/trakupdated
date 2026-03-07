@@ -1,7 +1,10 @@
+/* eslint-disable */
 "use client";
 
 import { motion } from "framer-motion";
 import { Crown, Lock, Leaf, Apple, UtensilsCrossed, Trophy, Gem, Check, Star, Sparkles, Flame, Zap, Dumbbell, Award } from "lucide-react";
+import { useState } from "react";
+import { AchievementPopup } from "./AchievementPopup";
 
 /* ── Overall card theme based on minimum cross-pillar streak ── */
 export interface BadgeTheme {
@@ -76,7 +79,7 @@ const QUADRANT_ICONS: Record<string, { thresholds: { min: number; config: Quadra
     },
 };
 
-function getQuadrant(pillar: string, streak: number): QuadrantConfig {
+export function getQuadrant(pillar: string, streak: number): QuadrantConfig {
     const config = QUADRANT_ICONS[pillar];
     if (!config) return { icon: Lock, colorClass: "text-white/15", glowColor: "" };
     for (const t of config.thresholds) {
@@ -91,86 +94,108 @@ export interface ProfileBadgeCardProps {
     sinceDate: string;
     memberNumber: string;
     isTrakPlus: boolean;
-    nutritionStreak: number;
-    habitsStreak: number;
-    fitnessStreak: number;
+    nutritionStreak: number;  // best ever
+    habitsStreak: number;     // best ever
+    fitnessStreak: number;    // best ever
+    currentNutritionStreak?: number;
+    currentHabitsStreak?: number;
+    currentFitnessStreak?: number;
+    tappable?: boolean;
+    name?: string;
 }
 
 export function ProfileBadgeCard({
     initials, sinceDate, memberNumber, isTrakPlus,
     nutritionStreak, habitsStreak, fitnessStreak,
+    currentNutritionStreak, currentHabitsStreak, currentFitnessStreak,
+    tappable = false, name,
 }: ProfileBadgeCardProps) {
+    const [showPopup, setShowPopup] = useState(false);
     const overallStreak = Math.min(nutritionStreak, habitsStreak, fitnessStreak);
     const theme = getTheme(overallStreak);
 
     const quadrants = [
-        { pillar: "nutrition", streak: nutritionStreak, pos: "top-3 left-3" },
-        { pillar: "habits", streak: habitsStreak, pos: "top-3 right-3" },
-        { pillar: "fitness", streak: fitnessStreak, pos: "bottom-3 left-3" },
+        { pillar: "nutrition", best: nutritionStreak, current: currentNutritionStreak ?? nutritionStreak, pos: "top-3 left-3" },
+        { pillar: "habits", best: habitsStreak, current: currentHabitsStreak ?? habitsStreak, pos: "top-3 right-3" },
+        { pillar: "fitness", best: fitnessStreak, current: currentFitnessStreak ?? fitnessStreak, pos: "bottom-3 left-3" },
     ];
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`relative w-full max-w-sm h-32 bg-white/[0.04] rounded-3xl border overflow-hidden ${theme.borderClass} ${theme.glowClass}`}
-        >
-            {/* Glass shine */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.03] to-transparent pointer-events-none" />
+        <>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={tappable ? () => setShowPopup(!showPopup) : undefined}
+                className={`relative w-full max-w-sm h-32 bg-white/[0.04] rounded-3xl border overflow-hidden ${theme.borderClass} ${theme.glowClass} ${tappable ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''}`}
+            >
+                {/* Glass shine */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.03] to-transparent pointer-events-none" />
 
-            {/* Quadrant icons */}
-            {quadrants.map(({ pillar, streak, pos }) => {
-                const q = getQuadrant(pillar, streak);
-                const Icon = q.icon;
-                return (
-                    <div
-                        key={pillar}
-                        className={`absolute ${pos} flex items-center gap-1`}
-                        title={`${pillar}: ${streak} day best streak`}
-                        style={q.glowColor ? { filter: `drop-shadow(0 0 4px ${q.glowColor})` } : undefined}
-                    >
-                        <Icon className={`w-3.5 h-3.5 ${q.colorClass}`} />
-                        {streak > 0 && (
-                            <span className={`text-[9px] font-bold ${q.colorClass}`}>{streak}</span>
-                        )}
-                    </div>
-                );
-            })}
-
-            {/* Future quadrant — locked */}
-            <div className="absolute bottom-3 right-3 flex items-center gap-1">
-                <Lock className="w-3 h-3 text-white/10" />
-                <motion.div
-                    animate={{ opacity: [0.1, 0.25, 0.1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className="w-1.5 h-1.5 rounded-full bg-white/20"
-                />
-            </div>
-
-            {/* Centre content */}
-            <div className="absolute inset-0 flex items-center justify-between px-8">
-                <div className="space-y-1">
-                    <h2 className={`text-4xl font-black tracking-tighter bg-clip-text text-transparent ${theme.initialsClass}`}>
-                        {initials}
-                    </h2>
-                    <p className={`text-[10px] uppercase tracking-widest font-bold ${theme.sinceClass}`}>
-                        Since {sinceDate}
-                    </p>
-                </div>
-                <div className="text-right">
-                    {isTrakPlus ? (
-                        <div className="flex items-center gap-1 mb-1 text-brand-emerald">
-                            <Crown className="w-3 h-3 fill-current" />
-                            <p className="text-[10px] uppercase tracking-widest font-bold">Trak+ Pro</p>
+                {/* Quadrant icons with current/best */}
+                {quadrants.map(({ pillar, best, current, pos }) => {
+                    const q = getQuadrant(pillar, best);
+                    const Icon = q.icon;
+                    return (
+                        <div
+                            key={pillar}
+                            className={`absolute ${pos} flex items-center gap-1`}
+                            title={`${pillar}: ${current}/${best}`}
+                            style={q.glowColor ? { filter: `drop-shadow(0 0 4px ${q.glowColor})` } : undefined}
+                        >
+                            <Icon className={`w-3.5 h-3.5 ${q.colorClass}`} />
+                            {best > 0 && (
+                                <span className={`text-[9px] font-bold ${q.colorClass}`}>
+                                    {current}/{best}
+                                </span>
+                            )}
                         </div>
-                    ) : (
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Trak Free</p>
-                    )}
-                    <p className={`text-2xl font-serif italic tracking-widest ${theme.numberClass}`}>
-                        No. {memberNumber}
-                    </p>
+                    );
+                })}
+
+                {/* Future quadrant — locked */}
+                <div className="absolute bottom-3 right-3 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-white/10" />
+                    <motion.div
+                        animate={{ opacity: [0.1, 0.25, 0.1] }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                        className="w-1.5 h-1.5 rounded-full bg-white/20"
+                    />
                 </div>
-            </div>
-        </motion.div>
+
+                {/* Centre content */}
+                <div className="absolute inset-0 flex items-center justify-between px-8">
+                    <div className="space-y-1">
+                        <h2 className={`text-4xl font-black tracking-tighter bg-clip-text text-transparent ${theme.initialsClass}`}>
+                            {initials}
+                        </h2>
+                        <p className={`text-[10px] uppercase tracking-widest font-bold ${theme.sinceClass}`}>
+                            Since {sinceDate}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        {isTrakPlus ? (
+                            <div className="flex items-center gap-1 mb-1 text-brand-emerald">
+                                <Crown className="w-3 h-3 fill-current" />
+                                <p className="text-[10px] uppercase tracking-widest font-bold">Trak+ Pro</p>
+                            </div>
+                        ) : (
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Trak Free</p>
+                        )}
+                        <p className={`text-2xl font-serif italic tracking-widest ${theme.numberClass}`}>
+                            No. {memberNumber}
+                        </p>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Achievement Popup */}
+            {tappable && showPopup && (
+                <AchievementPopup
+                    name={name || initials}
+                    pillars={quadrants.map(q => ({ pillar: q.pillar, current: q.current, best: q.best }))}
+                    onClose={() => setShowPopup(false)}
+                />
+            )}
+        </>
     );
 }
