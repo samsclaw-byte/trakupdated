@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState, useCallback, Suspense, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Plus, Key, X, Loader2, Trophy, Activity, Share2, Crown } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -54,6 +54,8 @@ function SquadsContent() {
     const [joinCode, setJoinCode] = useState("");
     const [isActionLoading, setIsActionLoading] = useState(false);
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const hasAttemptedDeepLink = useRef(false);
 
     // Dashboard State
     const [activeSquadIndex, setActiveSquadIndex] = useState(0);
@@ -100,15 +102,16 @@ function SquadsContent() {
     // Deep link: auto-join if ?code=XXXXXX in URL
     useEffect(() => {
         const code = searchParams.get('code');
-        if (code && currentUserId && !isLoadingInit) {
+        if (code && currentUserId && !isLoadingInit && !hasAttemptedDeepLink.current) {
+            hasAttemptedDeepLink.current = true;
             console.log('[Squads] Deep link detected, auto-joining with code:', code);
             setJoinCode(code.toUpperCase());
             handleJoinSquad(code);
-            // Clean the URL
-            window.history.replaceState({}, '', '/squads');
+            // Clean the URL properly
+            router.replace('/squads');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentUserId, isLoadingInit, searchParams]);
+    }, [currentUserId, isLoadingInit, searchParams, router]);
 
     // Fetch Feed or Leaderboard when tab or squad changes
     const fetchDashboardData = useCallback(async (squadId: string) => {
@@ -425,42 +428,16 @@ function SquadsContent() {
                                 </div>
                                 <p className="text-xs text-muted-foreground mb-6">Ask the squad admin for their 6-character invite code.</p>
 
-                                {/* OTP-style 6-box input */}
-                                <div className="flex gap-2 justify-center mb-6">
-                                    {Array.from({ length: 6 }).map((_, i) => (
-                                        <input
-                                            key={i}
-                                            id={`otp-${i}`}
-                                            type="text"
-                                            maxLength={1}
-                                            value={joinCode[i] || ''}
-                                            onChange={(e) => {
-                                                const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                                                const newCode = joinCode.split('');
-                                                newCode[i] = val;
-                                                const combined = newCode.join('').substring(0, 6);
-                                                setJoinCode(combined);
-                                                // Auto-focus next box
-                                                if (val && i < 5) {
-                                                    document.getElementById(`otp-${i + 1}`)?.focus();
-                                                }
-                                            }}
-                                            onKeyDown={(e) => {
-                                                // Allow backspace to go to previous box
-                                                if (e.key === 'Backspace' && !joinCode[i] && i > 0) {
-                                                    document.getElementById(`otp-${i - 1}`)?.focus();
-                                                }
-                                            }}
-                                            onPaste={(e) => {
-                                                e.preventDefault();
-                                                const pasted = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
-                                                setJoinCode(pasted);
-                                                const focusIdx = Math.min(pasted.length, 5);
-                                                document.getElementById(`otp-${focusIdx}`)?.focus();
-                                            }}
-                                            className="w-11 h-14 bg-white/5 border border-white/10 rounded-xl text-center text-xl font-mono font-bold uppercase focus:outline-none focus:border-brand-emerald focus:bg-brand-emerald/5 transition-all"
-                                        />
-                                    ))}
+                                {/* Single text input for mobile reliability */}
+                                <div className="mb-6">
+                                    <input
+                                        type="text"
+                                        maxLength={6}
+                                        placeholder="e.g. ABCDEF"
+                                        value={joinCode}
+                                        onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-center text-3xl font-mono font-bold uppercase focus:outline-none focus:border-brand-emerald focus:bg-brand-emerald/5 transition-all tracking-[0.3em]"
+                                    />
                                 </div>
 
                                 <button
@@ -769,39 +746,15 @@ function SquadsContent() {
                                 <button onClick={() => setShowJoin(false)} className="p-2 bg-white/5 rounded-full"><X className="w-4 h-4" /></button>
                             </div>
                             <p className="text-xs text-muted-foreground mb-6">Ask the squad admin for their 6-character invite code.</p>
-                            <div className="flex gap-2 justify-center mb-6">
-                                {Array.from({ length: 6 }).map((_, i) => (
-                                    <input
-                                        key={i}
-                                        id={`otp-dash-${i}`}
-                                        type="text"
-                                        maxLength={1}
-                                        value={joinCode[i] || ''}
-                                        onChange={(e) => {
-                                            const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                                            const newCode = joinCode.split('');
-                                            newCode[i] = val;
-                                            const combined = newCode.join('').substring(0, 6);
-                                            setJoinCode(combined);
-                                            if (val && i < 5) {
-                                                document.getElementById(`otp-dash-${i + 1}`)?.focus();
-                                            }
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Backspace' && !joinCode[i] && i > 0) {
-                                                document.getElementById(`otp-dash-${i - 1}`)?.focus();
-                                            }
-                                        }}
-                                        onPaste={(e) => {
-                                            e.preventDefault();
-                                            const pasted = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
-                                            setJoinCode(pasted);
-                                            const focusIdx = Math.min(pasted.length, 5);
-                                            document.getElementById(`otp-dash-${focusIdx}`)?.focus();
-                                        }}
-                                        className="w-11 h-14 bg-white/5 border border-white/10 rounded-xl text-center text-xl font-mono font-bold uppercase focus:outline-none focus:border-brand-emerald focus:bg-brand-emerald/5 transition-all"
-                                    />
-                                ))}
+                            <div className="mb-6">
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    placeholder="e.g. ABCDEF"
+                                    value={joinCode}
+                                    onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-center text-3xl font-mono font-bold uppercase focus:outline-none focus:border-brand-emerald focus:bg-brand-emerald/5 transition-all tracking-[0.3em]"
+                                />
                             </div>
                             <button
                                 onClick={() => handleJoinSquad()}
