@@ -341,22 +341,54 @@ export default function SquadsPage() {
                                 initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
                                 className="bg-card w-full max-w-sm rounded-3xl p-6 border border-white/10"
                             >
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex justify-between items-center mb-2">
                                     <h3 className="text-lg font-bold">Join Squad</h3>
                                     <button onClick={() => setShowJoin(false)} className="p-2 bg-white/5 rounded-full"><X className="w-4 h-4" /></button>
                                 </div>
-                                <input
-                                    type="text"
-                                    placeholder="Enter 6-character Code"
-                                    required
-                                    value={joinCode}
-                                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 mb-6 focus:outline-none focus:border-brand-emerald transition-colors font-mono text-center uppercase tracking-widest text-xl"
-                                />
+                                <p className="text-xs text-muted-foreground mb-6">Ask the squad admin for their 6-character invite code.</p>
+
+                                {/* OTP-style 6-box input */}
+                                <div className="flex gap-2 justify-center mb-6">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <input
+                                            key={i}
+                                            id={`otp-${i}`}
+                                            type="text"
+                                            maxLength={1}
+                                            value={joinCode[i] || ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                                const newCode = joinCode.split('');
+                                                newCode[i] = val;
+                                                const combined = newCode.join('').substring(0, 6);
+                                                setJoinCode(combined);
+                                                // Auto-focus next box
+                                                if (val && i < 5) {
+                                                    document.getElementById(`otp-${i + 1}`)?.focus();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                // Allow backspace to go to previous box
+                                                if (e.key === 'Backspace' && !joinCode[i] && i > 0) {
+                                                    document.getElementById(`otp-${i - 1}`)?.focus();
+                                                }
+                                            }}
+                                            onPaste={(e) => {
+                                                e.preventDefault();
+                                                const pasted = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+                                                setJoinCode(pasted);
+                                                const focusIdx = Math.min(pasted.length, 5);
+                                                document.getElementById(`otp-${focusIdx}`)?.focus();
+                                            }}
+                                            className="w-11 h-14 bg-white/5 border border-white/10 rounded-xl text-center text-xl font-mono font-bold uppercase focus:outline-none focus:border-brand-emerald focus:bg-brand-emerald/5 transition-all"
+                                        />
+                                    ))}
+                                </div>
+
                                 <button
                                     onClick={handleJoinSquad}
-                                    disabled={isActionLoading || !joinCode.trim()}
-                                    className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-xl disabled:opacity-50 flex items-center justify-center"
+                                    disabled={isActionLoading || joinCode.length < 6}
+                                    className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-xl disabled:opacity-50 flex items-center justify-center transition-all"
                                 >
                                     {isActionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Join"}
                                 </button>
@@ -428,33 +460,86 @@ export default function SquadsPage() {
                     )
                 ) : activeTab === 'leaderboard' ? (
                     leaderboard.length > 0 ? (
-                        <div className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                <span>Member</span>
-                                <span>Trak Score</span>
+                        <div className="flex flex-col gap-4">
+                            {/* Weekly Season Header */}
+                            <div className="flex items-center justify-between px-1 mb-2">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">This Week&apos;s Season</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{(() => {
+                                        const today = new Date();
+                                        const day = today.getDay();
+                                        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                                        const mon = new Date(today); mon.setDate(diff);
+                                        const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+                                        const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                        return `${fmt(mon)} – ${fmt(sun)}`;
+                                    })()}</p>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                                    <Trophy className="w-3.5 h-3.5 text-amber-500" /> Trak Score
+                                </div>
                             </div>
-                            {leaderboard.map((member, index) => (
-                                <motion.div
-                                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}
-                                    key={member.user_id}
-                                    className={`flex items-center justify-between p-4 rounded-xl border ${index === 0 ? 'bg-amber-500/10 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'bg-white/5 border-white/5'}`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${index === 0 ? 'bg-amber-500 text-black' : 'bg-white/10 text-white'}`}>
-                                            #{index + 1}
+
+                            {/* Podium Cards */}
+                            {leaderboard.map((member, index) => {
+                                const medals = ['🥇', '🥈', '🥉'];
+                                const medalColors = [
+                                    'bg-gradient-to-r from-amber-500/15 to-amber-600/5 border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.15)]',
+                                    'bg-gradient-to-r from-slate-300/10 to-slate-400/5 border-slate-400/20 shadow-[0_0_15px_rgba(148,163,184,0.1)]',
+                                    'bg-gradient-to-r from-orange-700/10 to-orange-800/5 border-orange-700/20 shadow-[0_0_12px_rgba(194,65,12,0.1)]',
+                                ];
+                                const rankBgColors = ['bg-amber-500 text-black', 'bg-slate-400 text-black', 'bg-orange-700 text-white'];
+                                const nameColors = ['text-amber-400', 'text-slate-300', 'text-orange-400'];
+                                const isTopThree = index < 3;
+                                const scoreColors = ['text-amber-400', 'text-slate-300', 'text-orange-400'];
+
+                                return (
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -15 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.08, type: "spring", bounce: 0.3 }}
+                                        key={member.user_id}
+                                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${isTopThree ? medalColors[index] : 'bg-white/[0.02] border-white/5'}`}
+                                    >
+                                        <div className="flex items-center gap-3.5">
+                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${isTopThree ? rankBgColors[index] : 'bg-white/10 text-muted-foreground'}`}>
+                                                {isTopThree ? medals[index] : `#${index + 1}`}
+                                            </div>
+                                            <div>
+                                                <p className={`font-bold text-sm ${isTopThree ? nameColors[index] : 'text-white/80'}`}>
+                                                    {member.name}
+                                                    {index === 0 && <span className="ml-1.5 text-[9px] font-black uppercase tracking-widest text-amber-500/70">Leader</span>}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                                    <span>{member.habit_completions} habits</span>
+                                                    <span className="text-white/10">·</span>
+                                                    <span>{member.perfect_days} perfect</span>
+                                                    {member.calorie_hits > 0 && (
+                                                        <>
+                                                            <span className="text-white/10">·</span>
+                                                            <span>{member.calorie_hits} cal hits</span>
+                                                        </>
+                                                    )}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className={`font-bold ${index === 0 ? 'text-amber-500' : 'text-white'}`}>{member.name}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                {member.habit_completions} Habits · {member.perfect_days} Perfect
-                                            </p>
+                                        <div className={`text-xl font-black font-mono tracking-tighter ${isTopThree ? scoreColors[index] : 'text-white/60'}`}>
+                                            {member.total_score}
                                         </div>
-                                    </div>
-                                    <div className="text-xl font-black font-mono tracking-tighter">
-                                        {member.total_score}
-                                    </div>
-                                </motion.div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
+
+                            {/* Scoring Legend */}
+                            <div className="mt-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-3">Scoring System</p>
+                                <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                                    <span>✅ Habit Completion</span><span className="text-right font-mono font-bold text-white/50">+5 pts</span>
+                                    <span>🎯 Calorie Target Hit</span><span className="text-right font-mono font-bold text-white/50">+50 pts</span>
+                                    <span>⭐ Perfect Habit Day</span><span className="text-right font-mono font-bold text-white/50">+25 pts</span>
+                                    <span>🔥 Reaction Given</span><span className="text-right font-mono font-bold text-white/50">+2 pts</span>
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">
