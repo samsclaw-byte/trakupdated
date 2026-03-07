@@ -263,8 +263,8 @@ function SquadsContent() {
                 setSquadName(""); setShowCreate(false);
                 await fetchSquads();
             }
-        } catch (err) {
-            console.error('[Squads] Crash during squad creation:', err);
+        } catch (createError) {
+            console.error('[Squads] Crash during squad creation:', createError);
         } finally {
             setIsActionLoading(false);
         }
@@ -341,8 +341,8 @@ function SquadsContent() {
             console.log('[Squads] Successfully joined squad:', foundSquad.name);
             setJoinCode(""); setShowJoin(false);
             await fetchSquads();
-        } catch (err) {
-            console.error('[Squads] Crash during squad join:', err);
+        } catch (joinError) {
+            console.error('[Squads] Crash during squad join:', joinError);
         } finally {
             setIsActionLoading(false);
         }

@@ -20,8 +20,8 @@ export default function NutritionPage() {
                 // e.g. "/squads?code=XYZ https://..." -> encode the URI or parse it
                 const encodedUrl = encodeURI(pendingRedirect.trim());
                 router.push(encodedUrl);
-            } catch (err) {
-                console.error('[Auth] Failed to parse pending redirect:', err);
+            } catch (parseError) {
+                console.error('[Auth] Failed to parse pending redirect:', parseError);
             }
         }
     }, [router]);
