@@ -177,6 +177,36 @@ export default function SquadsPage() {
         }
     }, [squads, activeTab, fetchDashboardData]);
 
+    // Realtime Polling for the Feed
+    useEffect(() => {
+        const activeSquad = squads[0];
+        if (!activeSquad || activeTab !== 'feed') return;
+
+        // Subscribe to feed inserts
+        const channel = supabase.channel('squad-feed-changes')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'squad_feed', filter: `squad_id=eq.${activeSquad.id}` },
+                (payload) => {
+                    // Refetch neatly (could also manually inject into state, but refetch guarantees we get the joined user data + reactions)
+                    fetchDashboardData(activeSquad.id);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'squad_reactions' },
+                (payload) => {
+                    // We just refetch the feed to update reaction counts globally
+                    fetchDashboardData(activeSquad.id);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [squads, activeTab, fetchDashboardData, supabase]);
+
     const generateJoinCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const handleCreateSquad = async () => {

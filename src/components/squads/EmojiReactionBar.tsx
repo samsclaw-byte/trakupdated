@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import { createClient } from "@/utils/supabase/client";
 
 interface Reaction {
@@ -31,7 +32,8 @@ export function EmojiReactionBar({ feedId, initialReactions, currentUserId }: Em
 
     const supabase = createClient();
 
-    const triggerFloatAnimation = (emoji: string) => {
+    const triggerFloatAnimation = (emoji: string, event?: React.MouseEvent) => {
+        // 1. Floating Emoji Animation Override
         // eslint-disable-next-line react-hooks/purity
         const id = Date.now() + Math.random();
         // random offset between -20px and +20px
@@ -39,13 +41,39 @@ export function EmojiReactionBar({ feedId, initialReactions, currentUserId }: Em
         const xOffset = (Math.random() - 0.5) * 40;
         setFloatingEmojis(prev => [...prev, { id, emoji, xOffset }]);
 
-        // Remove after animation (1.5s is safe for a 1s animation)
         setTimeout(() => {
             setFloatingEmojis(prev => prev.filter(e => e.id !== id));
-        }, 1500);
+        }, 1000); // Faster duration
+
+        // 2. Physical Confetti Explosion (Dopamine hit)
+        if (event) {
+            const rect = (event.target as HTMLElement).getBoundingClientRect();
+            // Convert to relative screen coordinates for canvas-confetti
+            const x = (rect.left + (rect.width / 2)) / window.innerWidth;
+            const y = (rect.top + (rect.height / 2)) / window.innerHeight;
+
+            let particleColors = ['#fbbf24', '#f59e0b']; // Default Yellow/Gold
+            if (emoji === '🔥') particleColors = ['#ef4444', '#f97316', '#eab308'];
+            if (emoji === '💪') particleColors = ['#60a5fa', '#3b82f6'];
+            if (emoji === '💯') particleColors = ['#ef4444', '#b91c1c'];
+            if (emoji === '👀') particleColors = ['#ffffff', '#9ca3af'];
+
+            confetti({
+                particleCount: 20,
+                spread: 50,
+                origin: { x, y },
+                colors: particleColors,
+                startVelocity: 15,
+                scalar: 0.7,
+                ticks: 50,
+                disableForReducedMotion: true
+            });
+
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
     };
 
-    const handleToggleReaction = async (emoji: string) => {
+    const handleToggleReaction = async (emoji: string, event: React.MouseEvent) => {
         // Optimistic UI updates
         const existingReaction = reactions.find(r => r.emoji === emoji && r.user_id === currentUserId);
 
@@ -61,7 +89,7 @@ export function EmojiReactionBar({ feedId, initialReactions, currentUserId }: Em
             // eslint-disable-next-line react-hooks/purity
             const tempId = `temp-${Date.now()}`;
             setReactions(prev => [...prev, { id: tempId, emoji, user_id: currentUserId }]);
-            triggerFloatAnimation(emoji);
+            triggerFloatAnimation(emoji, event);
 
             const { data } = await supabase
                 .from('squad_reactions')
@@ -85,8 +113,8 @@ export function EmojiReactionBar({ feedId, initialReactions, currentUserId }: Em
             {reactionCounts.map(({ emoji, count, hasReacted }) => (
                 <button
                     key={emoji}
-                    onClick={() => handleToggleReaction(emoji)}
-                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${hasReacted
+                    onClick={(e) => handleToggleReaction(emoji, e)}
+                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer select-none ${hasReacted
                         ? 'bg-brand-emerald/20 text-brand-emerald border border-brand-emerald/30'
                         : 'bg-white/5 text-muted-foreground border border-transparent hover:bg-white/10'
                         }`}
@@ -102,11 +130,11 @@ export function EmojiReactionBar({ feedId, initialReactions, currentUserId }: Em
                     {floatingEmojis.map((anim) => (
                         <motion.div
                             key={anim.id}
-                            initial={{ opacity: 1, y: 0, x: anim.xOffset, scale: 0.5 }}
-                            animate={{ opacity: 0, y: -60, x: anim.xOffset, scale: 1.5 }}
+                            initial={{ opacity: 1, y: 0, x: anim.xOffset, scale: 0.8 }}
+                            animate={{ opacity: 0, y: -40, x: anim.xOffset, scale: 1.2 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="absolute bottom-0 left-8 text-2xl"
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className="absolute bottom-4 left-8 text-3xl drop-shadow-lg"
                         >
                             {anim.emoji}
                         </motion.div>
