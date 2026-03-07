@@ -67,7 +67,12 @@ function SquadsContent() {
     const fetchSquads = useCallback(async () => {
         setIsLoadingInit(true);
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            console.warn('[Squads] No authenticated user found — page will show onboarding.');
+            setIsLoadingInit(false);
+            return;
+        }
+        console.log('[Squads] Authenticated as:', user.id, user.email);
         setCurrentUserId(user.id);
 
         // Check Trak+ status
@@ -82,6 +87,7 @@ function SquadsContent() {
         if (!error && data) {
             const mappedSquads = data.map((d: { squads: unknown }) => d.squads as Squad);
             setSquads(mappedSquads);
+            console.log('[Squads] User is in', mappedSquads.length, 'squad(s)');
         }
         setIsLoadingInit(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps

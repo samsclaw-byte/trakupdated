@@ -60,7 +60,10 @@ export async function updateSession(request: NextRequest) {
             request.nextUrl.pathname !== '/'
         ) {
             const url = request.nextUrl.clone()
+            // Preserve the intended destination so the landing page can redirect after login
+            const redirect = request.nextUrl.pathname + request.nextUrl.search
             url.pathname = '/'
+            url.searchParams.set('redirect', redirect)
             return NextResponse.redirect(url)
         }
 

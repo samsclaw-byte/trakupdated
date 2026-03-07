@@ -61,6 +61,12 @@ export default function LandingPage() {
         >
           <button
             onClick={async () => {
+              // Preserve any redirect destination (e.g., /squads?code=ABC123)
+              const params = new URLSearchParams(window.location.search);
+              const redirect = params.get('redirect');
+              if (redirect) {
+                localStorage.setItem('trak_auth_redirect', redirect);
+              }
               const { createClient } = await import('@/utils/supabase/client');
               const supabase = createClient();
               await supabase.auth.signInWithOAuth({
