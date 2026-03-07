@@ -5,8 +5,6 @@ import { createClient } from '@/utils/supabase/server'
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
-    // Check for a stored redirect (e.g., /squads?code=ABC123)
-    const redirectParam = searchParams.get('redirect')
 
     if (code) {
         const supabase = await createClient()
@@ -23,33 +21,16 @@ export async function GET(request: Request) {
 
             const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
             const isLocalEnv = process.env.NODE_ENV === 'development'
-
-            // Use stored redirect if available, otherwise default to nutrition/setup
-            let destination = isNewUser ? '/setup' : '/nutrition'
-            if (!isNewUser && redirectParam) {
-                destination = redirectParam
-            }
-
             const baseUrl = isLocalEnv ? origin : (forwardedHost ? `https://${forwardedHost}` : origin)
 
-            // Build the response with a script that checks localStorage for redirect
-            // (since localStorage is only accessible client-side, we use a small HTML page)
-            if (!isNewUser && !redirectParam) {
-                // Return a small HTML page that checks localStorage for redirect
-                return new NextResponse(
-                    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Redirecting...</title></head><body>
-                    <script>
-                        var r = localStorage.getItem('trak_auth_redirect');
-                        localStorage.removeItem('trak_auth_redirect');
-                        window.location.href = r ? '${baseUrl}' + r : '${baseUrl}${destination}';
-                    </script>
-                    <noscript><meta http-equiv="refresh" content="0;url=${baseUrl}${destination}"></noscript>
-                    </body></html>`,
-                    { status: 200, headers: { 'Content-Type': 'text/html' } }
-                )
+            // New users always go to setup
+            if (isNewUser) {
+                return NextResponse.redirect(`${baseUrl}/setup`)
             }
 
-            return NextResponse.redirect(`${baseUrl}${destination}`)
+            // Existing users: redirect to a client-side page that checks localStorage
+            // for any pending invite redirect, then navigates accordingly
+            return NextResponse.redirect(`${baseUrl}/nutrition`)
         }
     }
 
