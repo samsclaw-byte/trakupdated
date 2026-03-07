@@ -66,6 +66,11 @@ function SquadsContent() {
     const [isDataLoading, setIsDataLoading] = useState(false);
     const [isTrakPlus, setIsTrakPlus] = useState(false);
 
+    // Derived state MUST be declared right after Hooks and ABOVE all function handlers 
+    // to avoid Next.js SWC minification TDZ ReferenceErrors in closures.
+    const activeSquad = squads[activeSquadIndex] || squads[0];
+    const maxSquads = isTrakPlus ? 5 : 2;
+
     const fetchSquads = useCallback(async () => {
         setIsLoadingInit(true);
         const { data: { user } } = await supabase.auth.getUser();
@@ -478,8 +483,6 @@ function SquadsContent() {
     }
 
     // --- RENDER SQUAD DASHBOARD ---
-    const activeSquad = squads[activeSquadIndex] || squads[0];
-    const maxSquads = isTrakPlus ? 5 : 2;
 
     const handleShareInvite = async () => {
         const url = `${window.location.origin}/squads?code=${activeSquad.join_code}`;
