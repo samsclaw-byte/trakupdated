@@ -247,7 +247,8 @@ function SquadsContent() {
         }
 
         setIsActionLoading(true);
-        try {
+
+        const executeCreate = async () => {
             const code = generateJoinCode();
 
             const { data: newSquad, error: squadError } = await supabase
@@ -263,11 +264,13 @@ function SquadsContent() {
                 setSquadName(""); setShowCreate(false);
                 await fetchSquads();
             }
-        } catch (createError) {
+        };
+
+        executeCreate().catch((createError) => {
             console.error('[Squads] Crash during squad creation:', createError);
-        } finally {
+        }).finally(() => {
             setIsActionLoading(false);
-        }
+        });
     };
 
     const handleJoinSquad = async (codeOverride?: string) => {
@@ -286,7 +289,8 @@ function SquadsContent() {
         }
 
         setIsActionLoading(true);
-        try {
+
+        const executeJoin = async () => {
             console.log('[Squads] Attempting to join with code:', code, 'User:', currentUserId);
 
             // Step 1: Find the squad
@@ -341,11 +345,13 @@ function SquadsContent() {
             console.log('[Squads] Successfully joined squad:', foundSquad.name);
             setJoinCode(""); setShowJoin(false);
             await fetchSquads();
-        } catch (joinError) {
+        };
+
+        executeJoin().catch((joinError) => {
             console.error('[Squads] Crash during squad join:', joinError);
-        } finally {
+        }).finally(() => {
             setIsActionLoading(false);
-        }
+        });
     };
 
     if (isLoadingInit && squads.length === 0) {
