@@ -245,93 +245,107 @@ function SquadsContent() {
             alert(isTrakPlus ? 'You have reached the maximum of 5 squads.' : 'Free accounts can join up to 2 squads. Upgrade to Trak+ for 5!');
             return;
         }
+
         setIsActionLoading(true);
-        const code = generateJoinCode();
+        try {
+            const code = generateJoinCode();
 
-        const { data: newSquad, error: squadError } = await supabase
-            .from('squads')
-            .insert({ name: squadName.trim(), join_code: code, created_by: currentUserId })
-            .select().single();
+            const { data: newSquad, error: squadError } = await supabase
+                .from('squads')
+                .insert({ name: squadName.trim(), join_code: code, created_by: currentUserId })
+                .select().single();
 
-        if (newSquad && !squadError) {
-            await supabase
-                .from('squad_members')
-                .insert({ squad_id: newSquad.id, user_id: currentUserId, role: 'admin' });
+            if (newSquad && !squadError) {
+                await supabase
+                    .from('squad_members')
+                    .insert({ squad_id: newSquad.id, user_id: currentUserId, role: 'admin' });
 
-            setSquadName(""); setShowCreate(false);
-            await fetchSquads();
+                setSquadName(""); setShowCreate(false);
+                await fetchSquads();
+            }
+        } catch (err) {
+            console.error('[Squads] Crash during squad creation:', err);
+        } finally {
+            setIsActionLoading(false);
         }
-        setIsActionLoading(false);
     };
 
     const handleJoinSquad = async (codeOverride?: string) => {
-        const code = (codeOverride || joinCode).trim().toUpperCase();
-        if (!code || !currentUserId) {
-            console.warn('[Squads] Join attempt with empty code or no user');
+        // Strip out trailing URLs/garbage. Extract only the 6-character code
+        const rawCode = (codeOverride || joinCode).trim().toUpperCase();
+        const codeMatch = rawCode.match(/[A-Z0-9]{6}/);
+        const code = codeMatch ? codeMatch[0] : rawCode.replace(/[^A-Z0-9]/g, '').substring(0, 6);
+
+        if (!code || !currentUserId || code.length < 6) {
+            console.warn('[Squads] Join attempt with invalid code or no user');
             return;
         }
         if (squads.length >= maxSquads) {
             alert(isTrakPlus ? 'You have reached the maximum of 5 squads.' : 'Free accounts can join up to 2 squads. Upgrade to Trak+ for 5!');
             return;
         }
+
         setIsActionLoading(true);
-        console.log('[Squads] Attempting to join with code:', code, 'User:', currentUserId);
+        try {
+            console.log('[Squads] Attempting to join with code:', code, 'User:', currentUserId);
 
-        // Step 1: Find the squad
-        const { data: foundSquad, error: findError } = await supabase
-            .from('squads')
-            .select('*')
-            .eq('join_code', code)
-            .single();
+            // Step 1: Find the squad
+            const { data: foundSquad, error: findError } = await supabase
+                .from('squads')
+                .select('*')
+                .eq('join_code', code)
+                .single();
 
-        if (findError || !foundSquad) {
-            console.error('[Squads] Code lookup failed:', findError?.message || 'No squad found for code: ' + code);
-            alert(`No squad found with code "${code}". Please check the code and try again.`);
+            if (findError || !foundSquad) {
+                console.error('[Squads] Code lookup failed:', findError?.message || 'No squad found for code: ' + code);
+                alert(`No squad found with code "${code}". Please check the code and try again.`);
+                return;
+            }
+
+            console.log('[Squads] Found squad:', foundSquad.name, foundSquad.id);
+
+            // Step 2: Check if already a member
+            const { data: existingMember } = await supabase
+                .from('squad_members')
+                .select('id')
+                .eq('squad_id', foundSquad.id)
+                .eq('user_id', currentUserId)
+                .maybeSingle();
+
+            if (existingMember) {
+                console.warn('[Squads] User already a member of this squad');
+                alert(`You're already a member of "${foundSquad.name}"!`);
+                setJoinCode(""); setShowJoin(false);
+                return;
+            }
+
+            // Step 3: Insert membership
+            const { error: insertError } = await supabase
+                .from('squad_members')
+                .insert({ squad_id: foundSquad.id, user_id: currentUserId, role: 'member' });
+
+            if (insertError) {
+                console.error('[Squads] Failed to join squad:', insertError.message, insertError.details);
+                alert(`Failed to join squad: ${insertError.message}. Please try again or contact support.`);
+                return;
+            }
+
+            // Step 4: Post "joined" event to feed
+            await supabase.from('squad_feed').insert({
+                squad_id: foundSquad.id,
+                user_id: currentUserId,
+                event_type: 'joined',
+                metadata: {},
+            });
+
+            console.log('[Squads] Successfully joined squad:', foundSquad.name);
+            setJoinCode(""); setShowJoin(false);
+            await fetchSquads();
+        } catch (err) {
+            console.error('[Squads] Crash during squad join:', err);
+        } finally {
             setIsActionLoading(false);
-            return;
         }
-
-        console.log('[Squads] Found squad:', foundSquad.name, foundSquad.id);
-
-        // Step 2: Check if already a member
-        const { data: existingMember } = await supabase
-            .from('squad_members')
-            .select('id')
-            .eq('squad_id', foundSquad.id)
-            .eq('user_id', currentUserId)
-            .maybeSingle();
-
-        if (existingMember) {
-            console.warn('[Squads] User already a member of this squad');
-            alert(`You're already a member of "${foundSquad.name}"!`);
-            setIsActionLoading(false);
-            return;
-        }
-
-        // Step 3: Insert membership
-        const { error: insertError } = await supabase
-            .from('squad_members')
-            .insert({ squad_id: foundSquad.id, user_id: currentUserId, role: 'member' });
-
-        if (insertError) {
-            console.error('[Squads] Failed to join squad:', insertError.message, insertError.details, insertError.hint);
-            alert(`Failed to join squad: ${insertError.message}. Please try again or contact support.`);
-            setIsActionLoading(false);
-            return;
-        }
-
-        // Step 4: Post "joined" event to feed
-        await supabase.from('squad_feed').insert({
-            squad_id: foundSquad.id,
-            user_id: currentUserId,
-            event_type: 'joined',
-            metadata: {},
-        });
-
-        console.log('[Squads] Successfully joined squad:', foundSquad.name);
-        setJoinCode(""); setShowJoin(false);
-        await fetchSquads();
-        setIsActionLoading(false);
     };
 
     if (isLoadingInit && squads.length === 0) {
