@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Plus, Key, X, Loader2, Trophy, Activity, Share2, Crown } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -39,7 +40,7 @@ interface SquadMember {
     fitnessStreak: number;
 }
 
-export default function SquadsPage() {
+function SquadsContent() {
     const supabase = createClient();
 
     const [squads, setSquads] = useState<Squad[]>([]);
@@ -52,6 +53,7 @@ export default function SquadsPage() {
     const [squadName, setSquadName] = useState("");
     const [joinCode, setJoinCode] = useState("");
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const searchParams = useSearchParams();
 
     // Dashboard State
     const [activeSquadIndex, setActiveSquadIndex] = useState(0);
@@ -88,6 +90,19 @@ export default function SquadsPage() {
     useEffect(() => {
         fetchSquads();
     }, [fetchSquads]);
+
+    // Deep link: auto-join if ?code=XXXXXX in URL
+    useEffect(() => {
+        const code = searchParams.get('code');
+        if (code && currentUserId && !isLoadingInit) {
+            console.log('[Squads] Deep link detected, auto-joining with code:', code);
+            setJoinCode(code.toUpperCase());
+            handleJoinSquad(code);
+            // Clean the URL
+            window.history.replaceState({}, '', '/squads');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUserId, isLoadingInit, searchParams]);
 
     // Fetch Feed or Leaderboard when tab or squad changes
     const fetchDashboardData = useCallback(async (squadId: string) => {
@@ -240,30 +255,73 @@ export default function SquadsPage() {
         setIsActionLoading(false);
     };
 
-    const handleJoinSquad = async () => {
-        if (!joinCode.trim() || !currentUserId) return;
+    const handleJoinSquad = async (codeOverride?: string) => {
+        const code = (codeOverride || joinCode).trim().toUpperCase();
+        if (!code || !currentUserId) {
+            console.warn('[Squads] Join attempt with empty code or no user');
+            return;
+        }
         if (squads.length >= maxSquads) {
             alert(isTrakPlus ? 'You have reached the maximum of 5 squads.' : 'Free accounts can join up to 2 squads. Upgrade to Trak+ for 5!');
             return;
         }
         setIsActionLoading(true);
+        console.log('[Squads] Attempting to join with code:', code, 'User:', currentUserId);
 
+        // Step 1: Find the squad
         const { data: foundSquad, error: findError } = await supabase
             .from('squads')
             .select('*')
-            .eq('join_code', joinCode.trim().toUpperCase())
+            .eq('join_code', code)
             .single();
 
-        if (foundSquad && !findError) {
-            await supabase
-                .from('squad_members')
-                .insert({ squad_id: foundSquad.id, user_id: currentUserId, role: 'member' });
-
-            setJoinCode(""); setShowJoin(false);
-            await fetchSquads();
-        } else {
-            alert("Invalid join code");
+        if (findError || !foundSquad) {
+            console.error('[Squads] Code lookup failed:', findError?.message || 'No squad found for code: ' + code);
+            alert(`No squad found with code "${code}". Please check the code and try again.`);
+            setIsActionLoading(false);
+            return;
         }
+
+        console.log('[Squads] Found squad:', foundSquad.name, foundSquad.id);
+
+        // Step 2: Check if already a member
+        const { data: existingMember } = await supabase
+            .from('squad_members')
+            .select('id')
+            .eq('squad_id', foundSquad.id)
+            .eq('user_id', currentUserId)
+            .maybeSingle();
+
+        if (existingMember) {
+            console.warn('[Squads] User already a member of this squad');
+            alert(`You're already a member of "${foundSquad.name}"!`);
+            setIsActionLoading(false);
+            return;
+        }
+
+        // Step 3: Insert membership
+        const { error: insertError } = await supabase
+            .from('squad_members')
+            .insert({ squad_id: foundSquad.id, user_id: currentUserId, role: 'member' });
+
+        if (insertError) {
+            console.error('[Squads] Failed to join squad:', insertError.message, insertError.details, insertError.hint);
+            alert(`Failed to join squad: ${insertError.message}. Please try again or contact support.`);
+            setIsActionLoading(false);
+            return;
+        }
+
+        // Step 4: Post "joined" event to feed
+        await supabase.from('squad_feed').insert({
+            squad_id: foundSquad.id,
+            user_id: currentUserId,
+            event_type: 'joined',
+            metadata: {},
+        });
+
+        console.log('[Squads] Successfully joined squad:', foundSquad.name);
+        setJoinCode(""); setShowJoin(false);
+        await fetchSquads();
         setIsActionLoading(false);
     };
 
@@ -400,7 +458,7 @@ export default function SquadsPage() {
                                 </div>
 
                                 <button
-                                    onClick={handleJoinSquad}
+                                    onClick={() => handleJoinSquad()}
                                     disabled={isActionLoading || joinCode.length < 6}
                                     className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-xl disabled:opacity-50 flex items-center justify-center transition-all"
                                 >
@@ -421,14 +479,15 @@ export default function SquadsPage() {
     const maxSquads = isTrakPlus ? 5 : 2;
 
     const handleShareInvite = async () => {
-        const text = `Join my Trak squad '${activeSquad.name}'! Use code: ${activeSquad.join_code}`;
+        const url = `${window.location.origin}/squads?code=${activeSquad.join_code}`;
+        const text = `Join my Trak squad '${activeSquad.name}'! Use code: ${activeSquad.join_code}\n${url}`;
         if (navigator.share) {
             try {
-                await navigator.share({ title: 'Join my Trak Squad', text });
+                await navigator.share({ title: 'Join my Trak Squad', text, url });
             } catch { /* user cancelled */ }
         } else {
-            await navigator.clipboard.writeText(activeSquad.join_code);
-            alert('Join code copied to clipboard!');
+            await navigator.clipboard.writeText(url);
+            alert('Invite link copied to clipboard!');
         }
     };
 
@@ -739,7 +798,7 @@ export default function SquadsPage() {
                                 ))}
                             </div>
                             <button
-                                onClick={handleJoinSquad}
+                                onClick={() => handleJoinSquad()}
                                 disabled={isActionLoading || joinCode.length < 6}
                                 className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-xl disabled:opacity-50 flex items-center justify-center transition-all"
                             >
@@ -752,5 +811,13 @@ export default function SquadsPage() {
 
             <BottomTabBar />
         </div>
+    );
+}
+
+export default function SquadsPage() {
+    return (
+        <Suspense fallback={<div className="flex flex-col min-h-screen bg-brand-black text-white items-center justify-center"><div className="w-8 h-8 border-2 border-brand-emerald border-t-transparent rounded-full animate-spin" /></div>}>
+            <SquadsContent />
+        </Suspense>
     );
 }

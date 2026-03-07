@@ -1,0 +1,248 @@
+# TRAK — Product Requirements Document (PRD)
+### Version 2.0 · March 2026
+
+---
+
+![TRAK Hero](trak_hero_mockup_1772867147562.png)
+
+---
+
+## 1. Product Overview
+
+**TRAK** is a unified health accountability platform that fuses **Nutrition Tracking**, **Habit Building**, **Fitness Logging**, and **Social Accountability (Squads)** into a single, gamified mobile-first experience. It leverages behavioral psychology — streaks, social proof, and variable reward mechanics — to convert intention into lasting behavior change.
+
+> **Mission:** Make consistency the product, not perfection.
+
+---
+
+## 2. Core Architecture
+
+```mermaid
+graph TD
+    A["🏠 Landing Page"] --> B["⚙️ Setup Wizard"]
+    B --> C["⏳ Loading/Calibration"]
+    C --> D["📊 Dashboard"]
+    D --> E["🥗 Nutrition"]
+    D --> F["✅ Habits"]
+    D --> G["🏋️ Fitness"]
+    D --> H["👥 Squads"]
+    D --> I["📈 Trends"]
+    D --> J["👤 Profile"]
+    D --> K["🥤 Shake Builder"]
+    E --> L["AI Meal Scan"]
+    E --> M["Manual Entry"]
+    H --> N["Activity Feed"]
+    H --> O["Leaderboard"]
+    H --> P["Members"]
+```
+
+---
+
+## 3. Feature Modules
+
+### 3.1 🥗 Nutrition Engine
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Calorie Dashboard** | Circular gauge showing daily intake vs target | ✅ Live |
+| **Macro Pie Chart** | Protein / Carbs / Fat breakdown with labeled percentages | ✅ Live |
+| **Micronutrient Web** | Radar chart showing RDA coverage for 7+ micronutrients | ✅ Live |
+| **AI Meal Scan** | Camera → GPT-4o Vision → auto-parsed nutrients (Trak+ only) | ✅ Live |
+| **Manual Meal Entry** | Text-based meal logging with nutrient auto-lookup | ✅ Live |
+| **Nutrition Trends** | 7-day / 28-day calorie and macro trend charts | ✅ Live |
+
+**Data Model:** `nutrition_entries` table with `user_id`, `meal_name`, `calories`, `protein`, `carbs`, `fat`, `micros (JSONB)`, `created_at`
+
+---
+
+### 3.2 ✅ Habits Engine
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Daily Habit Grid** | Toggle-based checklist of active habits | ✅ Live |
+| **Add/Edit Habits** | Modal to create custom habits with icons and frequency | ✅ Live |
+| **Streak Badges** | Visual badges showing current streak per habit | ✅ Live |
+| **Perfect Day Detection** | Awards "Perfect Day" when all active habits are completed | ✅ Live |
+| **Habit Trends** | Heatmap calendar and completion rate charts | ✅ Live |
+
+**Data Model:** `habits` (definitions), `habit_completions` (daily toggles), `habit_streaks` (current + best streak per habit)
+
+---
+
+### 3.3 🏋️ Fitness Engine
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Workout Logger** | Log activity type, duration, calories burned | ✅ Live |
+| **MET Calculator** | Auto-calculates calories from activity + duration using MET values | ✅ Live |
+| **Fitness Trends** | Weekly workout frequency and calorie burn charts | ✅ Live |
+
+**Data Model:** `workouts` table with `user_id`, `activity`, `duration_minutes`, `calories_burned`, `created_at`
+
+**Utility:** [METs.ts](file:///c:/Users/samcu/.gemini/antigravity/scratch/trak/src/utils/METs.ts) — 50+ activity MET lookup table for calorie estimation
+
+---
+
+### 3.4 👥 Squads (Multiplayer Engine)
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Create Squad** | Deploy a private squad with auto-generated 6-char join code | ✅ Live |
+| **Join Squad** | OTP-style 6-box code input with auto-focus and paste support | ✅ Live |
+| **Activity Feed** | Real-time Supabase listener showing squad member actions | ✅ Live |
+| **Emoji Reactions** | 🔥💪🙌👀 with Canvas Confetti micro-explosions and haptic feedback | ✅ Live |
+| **Holographic Leaderboard** | Gold/Silver/Bronze podium with weekly season reset | ✅ Live |
+| **Tiered Milestone Cards** | Streak milestones (3/5/10/21/30/50/100) as celebration banners | ✅ Live |
+| **Multi-Squad Toggle** | Horizontal pill switcher (2 basic / 5 Trak+) | ✅ Live |
+| **Share Invite** | Web Share API → WhatsApp/iMessage with clipboard fallback | ✅ Live |
+| **Achievement Popup** | Tappable profile cards → glassmorphic detail modal | ✅ Live |
+
+**Scoring System:**
+
+| Action | Points |
+|--------|--------|
+| ✅ Habit Completion | +5 |
+| ⭐ Perfect Habit Day | +25 |
+| 🎯 Calorie Target Hit | +50 |
+| 🏋️ Workout Logged | +50 |
+| 🔱 Trifecta Bonus (all 3 pillars) | +10 |
+| 🔥 Reaction Given | +2 |
+
+---
+
+### 3.5 📈 Trends & Analytics
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Unified Dashboard** | Tabbed view across Nutrition/Habits/Fitness trends | ✅ Live |
+| **7-Day View** | Short-term performance snapshot | ✅ Live |
+| **28-Day View** | Monthly trend analysis (Trak+ only) | ✅ Live |
+| **SubView Toggle** | Pill switcher between time ranges | ✅ Live |
+
+---
+
+### 3.6 👤 Profile & Gamification
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Profile Badge Card** | Glassmorphic card with initials, member number, tier icons | ✅ Live |
+| **Current/Best Streak Notation** | `3/5` format showing current vs all-time best per pillar | ✅ Live |
+| **Tiered Badge System** | 7 tiers: 🌱→🔥→⚡→💪→🎯→💎→👑 based on streak thresholds | ✅ Live |
+| **Morning Debrief** | Daily overlay summarizing yesterday's achievements with odometer animation | ✅ Live |
+| **Supernova Reveal** | Card-flip animation when a new badge tier is unlocked | ✅ Live |
+
+---
+
+### 3.7 🥤 Shake Builder
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Protein Shake Calculator** | Custom shake builder with ingredient selection | ✅ Live |
+| **Nutrient Breakdown** | Auto-calculated macro and calorie totals for the shake | ✅ Live |
+
+---
+
+## 4. User Flow Map
+
+```mermaid
+journey
+    title New User Onboarding
+    section Discovery
+      Land on marketing page: 5: User
+      Sign up with email/social: 4: User
+    section Calibration
+      Enter biometrics (age, weight, height): 3: User
+      Set daily calorie target: 4: User
+      Select initial habits: 4: User
+      Loading/calibration animation: 5: System
+    section Daily Loop
+      Morning Debrief shows yesterday's recap: 5: System
+      Log meals via scan or manual entry: 4: User
+      Check off daily habits: 5: User
+      Log a workout: 3: User
+      Check squad feed and react: 5: User
+      Review trends before bed: 3: User
+```
+
+---
+
+## 5. Technical Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 15 (App Router), React 19, TypeScript |
+| **Styling** | Tailwind CSS, Framer Motion |
+| **Backend** | Supabase (Auth, Postgres, Realtime, RPC) |
+| **AI** | OpenAI GPT-4o Vision (meal scanning) |
+| **Hosting** | Vercel (Edge Functions + CDN) |
+| **Gamification** | canvas-confetti, custom framer-motion choreography |
+| **PWA** | Mobile-first responsive, installable as home screen app |
+
+---
+
+## 6. Monetization: Trak Free vs Trak+
+
+| Feature | Free | Trak+ ($4.99/mo) |
+|---------|------|-------------------|
+| Nutrition tracking | ✅ | ✅ |
+| Habits | 5 max | Unlimited |
+| Fitness logging | ✅ | ✅ |
+| AI Meal Scan | ❌ | ✅ |
+| Squads | 2 max | 5 max |
+| Trends | 7-day | 28-day |
+| Shake Builder | ❌ | ✅ |
+| Badge card tier | Standard | Gold border + Crown |
+
+---
+
+## 7. Badge Tier System
+
+| Threshold | Icon | Title | Card Treatment |
+|-----------|------|-------|----------------|
+| 0 days | — | Unranked | Default border |
+| 3+ days | 🌱 | Getting Started | Green tint |
+| 5+ days | 🔥 | Momentum | Orange glow |
+| 10+ days | ⚡ | Double Digits | Blue aura |
+| 21+ days | 💪 | Habit Formed | Purple shimmer |
+| 30+ days | 🎯 | Monthly Master | Emerald radiance |
+| 50+ days | 💎 | Elite | Gold border |
+| 100+ days | 👑 | Legendary | Full gold + crown |
+
+---
+
+## 8. Database Schema (Key Tables)
+
+```mermaid
+erDiagram
+    USERS ||--o{ NUTRITION_ENTRIES : logs
+    USERS ||--o{ HABITS : creates
+    USERS ||--o{ HABIT_COMPLETIONS : completes
+    USERS ||--o{ HABIT_STREAKS : tracks
+    USERS ||--o{ WORKOUTS : logs
+    USERS ||--o{ SQUAD_MEMBERS : joins
+    SQUADS ||--o{ SQUAD_MEMBERS : contains
+    SQUADS ||--o{ SQUAD_FEED : generates
+    SQUAD_FEED ||--o{ SQUAD_REACTIONS : receives
+
+    USERS {
+        uuid id PK
+        text name
+        int member_number
+        bool is_trak_plus
+        timestamp created_at
+    }
+    SQUADS {
+        uuid id PK
+        text name
+        text join_code
+        text timezone
+        uuid created_by FK
+    }
+    SQUAD_FEED {
+        uuid id PK
+        uuid squad_id FK
+        uuid user_id FK
+        text event_type
+        jsonb metadata
+        timestamp created_at
+    }
