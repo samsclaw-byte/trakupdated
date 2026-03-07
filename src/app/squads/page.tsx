@@ -456,13 +456,33 @@ export default function SquadsPage() {
                         <h1 className="text-2xl font-bold tracking-tight">{activeSquad?.name}</h1>
                         <p className="text-xs font-bold font-mono tracking-widest text-brand-emerald mt-1">CODE: {activeSquad?.join_code}</p>
                     </div>
-                    <button
-                        onClick={handleShareInvite}
-                        className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
-                        title="Share invite code"
-                    >
-                        <Share2 className="w-4 h-4 text-brand-emerald" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleShareInvite}
+                            className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
+                            title="Share invite code"
+                        >
+                            <Share2 className="w-4 h-4 text-brand-emerald" />
+                        </button>
+                        {squads.length < maxSquads && (
+                            <div className="flex gap-1.5">
+                                <button
+                                    onClick={() => setShowCreate(true)}
+                                    className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
+                                    title="Create new squad"
+                                >
+                                    <Plus className="w-4 h-4 text-brand-emerald" />
+                                </button>
+                                <button
+                                    onClick={() => setShowJoin(true)}
+                                    className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
+                                    title="Join a squad"
+                                >
+                                    <Key className="w-4 h-4 text-brand-emerald" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Sub-navigation Toggles */}
@@ -635,6 +655,100 @@ export default function SquadsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Create/Join Modals (available from dashboard) */}
+            <AnimatePresence>
+                {showCreate && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            className="bg-card w-full max-w-sm rounded-3xl p-6 border border-white/10"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-lg font-bold">Create Squad</h3>
+                                <button onClick={() => setShowCreate(false)} className="p-2 bg-white/5 rounded-full"><X className="w-4 h-4" /></button>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Squad Name (e.g., Morning Crew)"
+                                required
+                                value={squadName}
+                                onChange={(e) => setSquadName(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 mb-6 focus:outline-none focus:border-brand-emerald transition-colors"
+                            />
+                            <button
+                                onClick={handleCreateSquad}
+                                disabled={isActionLoading || !squadName.trim()}
+                                className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-xl disabled:opacity-50 flex items-center justify-center"
+                            >
+                                {isActionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Deploy Squad"}
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {showJoin && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            className="bg-card w-full max-w-sm rounded-3xl p-6 border border-white/10"
+                        >
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-lg font-bold">Join Squad</h3>
+                                <button onClick={() => setShowJoin(false)} className="p-2 bg-white/5 rounded-full"><X className="w-4 h-4" /></button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-6">Ask the squad admin for their 6-character invite code.</p>
+                            <div className="flex gap-2 justify-center mb-6">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <input
+                                        key={i}
+                                        id={`otp-dash-${i}`}
+                                        type="text"
+                                        maxLength={1}
+                                        value={joinCode[i] || ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                            const newCode = joinCode.split('');
+                                            newCode[i] = val;
+                                            const combined = newCode.join('').substring(0, 6);
+                                            setJoinCode(combined);
+                                            if (val && i < 5) {
+                                                document.getElementById(`otp-dash-${i + 1}`)?.focus();
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Backspace' && !joinCode[i] && i > 0) {
+                                                document.getElementById(`otp-dash-${i - 1}`)?.focus();
+                                            }
+                                        }}
+                                        onPaste={(e) => {
+                                            e.preventDefault();
+                                            const pasted = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+                                            setJoinCode(pasted);
+                                            const focusIdx = Math.min(pasted.length, 5);
+                                            document.getElementById(`otp-dash-${focusIdx}`)?.focus();
+                                        }}
+                                        className="w-11 h-14 bg-white/5 border border-white/10 rounded-xl text-center text-xl font-mono font-bold uppercase focus:outline-none focus:border-brand-emerald focus:bg-brand-emerald/5 transition-all"
+                                    />
+                                ))}
+                            </div>
+                            <button
+                                onClick={handleJoinSquad}
+                                disabled={isActionLoading || joinCode.length < 6}
+                                className="w-full py-4 bg-brand-emerald text-brand-black font-bold rounded-xl disabled:opacity-50 flex items-center justify-center transition-all"
+                            >
+                                {isActionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Join"}
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <BottomTabBar />
         </div>
