@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { X, Target, Zap, Activity, Dumbbell, Scale } from "lucide-react";
+import { X, Target, Zap, Activity, Dumbbell } from "lucide-react";
 
 interface WeeklyReviewProps {
     isOpen: boolean;
@@ -50,7 +50,6 @@ export function WeeklyReviewOverlay({ isOpen, onClose, onCompleted }: WeeklyRevi
             }
         };
         fetchMetrics();
-        setStep('input');
     }, [isOpen]);
 
     const handleRecalibrate = async () => {
@@ -93,11 +92,16 @@ export function WeeklyReviewOverlay({ isOpen, onClose, onCompleted }: WeeklyRevi
         }, 1500);
     };
 
+    const handleClose = () => {
+        onClose();
+        setTimeout(() => setStep('input'), 300); // Reset after exit animation
+    };
+
     const handleConfirm = () => {
         if (results && baseMetrics) {
             onCompleted(parseFloat(weightInput), results.newTdee);
         }
-        onClose();
+        handleClose();
     };
 
     if (!isOpen) return null;
@@ -112,7 +116,7 @@ export function WeeklyReviewOverlay({ isOpen, onClose, onCompleted }: WeeklyRevi
                 <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-10 pointer-events-none" />
 
                 <div className="relative w-full max-w-md mx-auto h-[85vh] bg-brand-black border border-white/10 rounded-t-[40px] p-6 shadow-2xl flex flex-col overflow-hidden">
-                    <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-white/5 rounded-full hover:bg-white/10 transition">
+                    <button onClick={handleClose} className="absolute top-6 right-6 p-2 bg-white/5 rounded-full hover:bg-white/10 transition">
                         <X className="w-5 h-5 text-white/50" />
                     </button>
 
