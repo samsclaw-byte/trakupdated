@@ -1,12 +1,13 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine, Crown, X } from "lucide-react";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine, Crown, X, Scale } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { logSquadEvent } from "@/utils/squads";
 import SnapToTrakModal, { ParsedMeal } from "./SnapToTrakModal";
+import { WeeklyReviewOverlay } from "@/components/ui/WeeklyReviewOverlay";
 
 interface Meal {
     id: string;
@@ -39,6 +40,7 @@ interface UserProfile {
     weight: number;
     name: string;
     is_trak_plus: boolean;
+    last_weigh_in_date: string | null;
 }
 
 export default function NutritionToday() {
@@ -53,6 +55,8 @@ export default function NutritionToday() {
     const [isSnapModalOpen, setIsSnapModalOpen] = useState(false);
     const [macroView, setMacroView] = useState<'macro' | 'micro'>('macro');
     const [microInfo, setMicroInfo] = useState<string | null>(null);
+    const [needsWeeklyReview, setNeedsWeeklyReview] = useState(false);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
     const supabaseRef = useRef(createClient());
     const router = useRouter();
@@ -102,11 +106,30 @@ export default function NutritionToday() {
 
             const { data: userProfile } = await supabase
                 .from('users')
-                .select('daily_calories, weight, name, is_trak_plus')
+                .select('daily_calories, weight, name, is_trak_plus, last_weigh_in_date')
                 .eq('id', user.id)
                 .single();
 
-            if (userProfile) setProfile(userProfile);
+            if (userProfile) {
+                setProfile(userProfile);
+
+                // Weekly Review Trigger Logic
+                const today = new Date();
+                const todayLocalISO = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                const lastDate = userProfile.last_weigh_in_date;
+                let overdue = false;
+
+                if (!lastDate) {
+                    if (today.getDay() === 0) overdue = true; // It's Sunday and no weigh-in
+                } else {
+                    const diffDays = Math.floor((today.getTime() - new Date(lastDate).getTime()) / (1000 * 3600 * 24));
+                    // Trigger if it's been a week, OR if it's Sunday and they haven't weighed in yet today
+                    if (diffDays >= 7 || (today.getDay() === 0 && lastDate !== todayLocalISO)) {
+                        overdue = true;
+                    }
+                }
+                setNeedsWeeklyReview(overdue);
+            }
 
             const startOfDay = new Date(selectedDate);
             startOfDay.setHours(0, 0, 0, 0);
@@ -268,6 +291,38 @@ export default function NutritionToday() {
 
     return (
         <div className="px-6 py-8 space-y-12 pb-8">
+            <WeeklyReviewOverlay
+                isOpen={isReviewModalOpen}
+                onClose={() => setIsReviewModalOpen(false)}
+                onCompleted={(newWeight, newGoal) => {
+                    setProfile(prev => prev ? { ...prev, weight: newWeight, daily_calories: newGoal, last_weigh_in_date: new Date().toISOString() } : null);
+                    setNeedsWeeklyReview(false);
+                }}
+            />
+
+            {needsWeeklyReview && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="w-full relative rounded-2xl p-4 bg-brand-emerald/10 border border-brand-emerald overflow-hidden backdrop-blur-sm cursor-pointer"
+                    onClick={() => setIsReviewModalOpen(true)}
+                >
+                    <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center bg-brand-emerald opacity-[0.05] pointer-events-none" />
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-brand-emerald text-brand-black rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.5)]">
+                                <Scale className="w-5 h-5 ml-0.5" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-brand-emerald capitalize">Weekly Recalibration</h4>
+                                <p className="text-[10px] uppercase tracking-widest text-brand-emerald/70 font-bold leading-tight">Sync metrics for new targets</p>
+                            </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-brand-emerald" />
+                    </div>
+                </motion.div>
+            )}
+
             {/* Date Navigator */}
             <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-2 mb-4">
                 <button onClick={handlePrevDay} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
