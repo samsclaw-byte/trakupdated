@@ -157,7 +157,7 @@ export default function HabitsToday() {
         }
 
         setIsLoading(false);
-    }, []);
+    }, [viewingDateStr]);
 
     useEffect(() => {
         const timer = setTimeout(() => loadData(), 0);
