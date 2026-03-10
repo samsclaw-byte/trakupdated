@@ -135,19 +135,19 @@ export async function calculateDebriefData(supabase: SupabaseClient, userId: str
         DEFAULT_STATS.habits.totalActive = activeHabits?.length || 0;
         DEFAULT_STATS.habits.completedCount = yesterdayHabits?.length || 0;
 
-        // Fetch max streak from habit_streaks view
+        // Fetch overall streak from perfect_days
         const { data: streakData } = await supabase
             .from('habit_streaks')
-            .select('habit_id, current_streak, best_streak')
-            .eq('user_id', userId);
+            .select('current_streak, best_streak')
+            .eq('user_id', userId)
+            .eq('habit_id', 'perfect_days')
+            .limit(1);
 
         let maxHabitCurrent = 0;
         let maxHabitBest = 0;
-        if (streakData) {
-            streakData.forEach(s => {
-                if (s.current_streak > maxHabitCurrent) maxHabitCurrent = s.current_streak;
-                if (s.best_streak > maxHabitBest) maxHabitBest = s.best_streak;
-            });
+        if (streakData && streakData.length > 0) {
+            maxHabitCurrent = streakData[0].current_streak;
+            maxHabitBest = streakData[0].best_streak;
         }
 
         DEFAULT_STATS.habits.currentStreak = maxHabitCurrent;

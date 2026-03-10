@@ -113,7 +113,7 @@ export default function HabitsTrends() {
     const actualDays = Math.max(1, Math.floor((todayDate.getTime() - chartStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
     const dateRange: string[] = [];
-    for (let i = actualDays - 1; i >= 0; i--) {
+    for (let i = 0; i < actualDays; i++) {
         const d = new Date(todayDate);
         d.setUTCDate(todayDate.getUTCDate() - i);
         dateRange.push(d.toISOString().split('T')[0]);

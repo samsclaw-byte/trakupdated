@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import NutritionToday from "./NutritionToday";
 import NutritionTrends from "./NutritionTrends";
+import NutritionReports from "./NutritionReports";
 
 export default function NutritionClient() {
     const supabaseRef = useRef(createClient());
@@ -44,6 +45,7 @@ export default function NutritionClient() {
                 views={[
                     { key: "today", label: "Today", content: <NutritionToday /> },
                     { key: "trends", label: "Trends", content: <NutritionTrends /> },
+                    { key: "reports", label: "Reports", content: <NutritionReports /> },
                 ]}
             />
 

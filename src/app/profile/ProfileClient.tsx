@@ -48,21 +48,50 @@ export default function ProfileClient() {
                 is_trak_plus: dbUser?.is_trak_plus || false,
             });
 
-            // Load best streaks per pillar
-            const { data: streakData } = await supabase
-                .from('habit_streaks')
-                .select('habit_id, best_streak, habit_definitions!inner(name)')
-                .eq('user_id', user.id);
+            // Calculate perfect days streak (ALL active habits completed)
+            const { data: activeHabits } = await supabase
+                .from('habit_definitions')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('is_active', true);
 
-            if (streakData && streakData.length > 0) {
-                // For now, sum best streaks by pillar — habits get the max across all habits
-                let maxHabitStreak = 0;
-                streakData.forEach((s: Record<string, unknown>) => {
-                    if (typeof s.best_streak === 'number' && s.best_streak > maxHabitStreak) {
-                        maxHabitStreak = s.best_streak;
+            const { data: allLogs } = await supabase
+                .from('habit_logs')
+                .select('habit_id, date, completed')
+                .eq('user_id', user.id)
+                .eq('completed', true);
+
+            if (activeHabits && allLogs && activeHabits.length > 0) {
+                const logsByDate = allLogs.reduce((acc: Record<string, Set<string>>, log: { habit_id: string, date: string, completed: boolean }) => {
+                    if (!acc[log.date]) acc[log.date] = new Set();
+                    acc[log.date].add(log.habit_id);
+                    return acc;
+                }, {});
+
+                const activeHabitIds = activeHabits.map((h: { id: string }) => h.id);
+
+                const perfectDates = Object.keys(logsByDate).filter(date => {
+                    const completedOnDate = logsByDate[date];
+                    return activeHabitIds.every((id: string) => completedOnDate.has(id));
+                }).sort((a, b) => b.localeCompare(a)); // Descending sort
+
+                let bestHabitsStreak = 0;
+                if (perfectDates.length > 0) {
+                    let currentStreak = 1;
+                    bestHabitsStreak = 1;
+                    for (let i = 1; i < perfectDates.length; i++) {
+                        const prev = new Date(perfectDates[i - 1]);
+                        const curr = new Date(perfectDates[i]);
+                        const diffDays = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
+                        if (Math.round(diffDays) === 1) {
+                            currentStreak++;
+                            bestHabitsStreak = Math.max(bestHabitsStreak, currentStreak);
+                        } else {
+                            currentStreak = 1;
+                        }
                     }
-                });
-                setPillarStreaks(prev => ({ ...prev, habits: maxHabitStreak }));
+                }
+                setPillarStreaks(prev => ({ ...prev, habits: bestHabitsStreak }));
             }
 
             // Load workout streak (consecutive days with workouts)

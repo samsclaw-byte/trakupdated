@@ -46,12 +46,13 @@ export default function FitnessTrends() {
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - timeframe + 1);
 
+            // Fetch based on local YYYY-MM-DD
             const endDateStr = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
             const startDateStr = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
 
             const { data: workouts, error } = await supabase
                 .from("workouts")
-                .select("date, calories_burned, type")
+                .select("date, calories_burned, activity_type")
                 .eq("user_id", user.id)
                 .gte("date", startDateStr)
                 .lte("date", endDateStr);
@@ -76,8 +77,8 @@ export default function FitnessTrends() {
                 activeDays: uniqueDays.size,
             });
 
-            // Build grid data
-            const days = getDaysArray(timeframe);
+            // Build grid data (Reverse the array so oldest day is first, today is last)
+            const days = getDaysArray(timeframe).reverse();
             const mappedData = days.map(day => {
                 const dateStr = new Date(day.getTime() - (day.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
                 const daysWorkouts = workouts?.filter(w => w.date === dateStr) || [];
@@ -85,7 +86,7 @@ export default function FitnessTrends() {
                     date: day,
                     calories: daysWorkouts.reduce((sum, w) => sum + w.calories_burned, 0),
                     didWorkout: daysWorkouts.length > 0,
-                    type: daysWorkouts.length > 0 ? daysWorkouts[0].type : null
+                    type: daysWorkouts.length > 0 ? daysWorkouts[0].activity_type : null
                 };
             });
 

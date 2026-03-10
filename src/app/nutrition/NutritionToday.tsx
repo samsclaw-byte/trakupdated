@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, ChevronLeft, ChevronRight, ScanLine, Crown, X, Scale } from "lucide-react";
+import { Apple, Drumstick, Pizza, Coffee, Loader2, Trash2, Edit2, ChevronLeft, ChevronRight, ScanLine, Crown, X, Scale, Sparkles } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -57,6 +57,18 @@ export default function NutritionToday() {
     const [microInfo, setMicroInfo] = useState<string | null>(null);
     const [needsWeeklyReview, setNeedsWeeklyReview] = useState(false);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editingMealId, setEditingMealId] = useState<string | null>(null);
+
+    const handleEditMealClick = (meal: Meal) => {
+        setIsEditMode(true);
+        setEditingMealId(meal.id);
+        const descriptionMatch = meal.text_entry.match(/\|:\|\s(.*)/);
+        const description = descriptionMatch ? descriptionMatch[1] : (meal.text_entry.includes('|:|') ? meal.text_entry.split(' |:| ')[1] : meal.text_entry);
+        setMealInput(description.trim());
+        setSelectedType(meal.meal_type as any);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const supabaseRef = useRef(createClient());
     const router = useRouter();
@@ -163,27 +175,59 @@ export default function NutritionToday() {
                     mealText: mealInput,
                     mealType: selectedType,
                     date: selectedDate.toISOString(),
-                    imageBase64
+                    imageBase64,
+                    previewOnly: isEditMode
                 })
             });
             if (!res.ok) throw new Error("Failed to parse meal");
-            const newMeal = await res.json();
-            setMeals(prev => [newMeal, ...prev]);
+            const newMealData = await res.json();
 
-            const newConsumed = consumed + (Number(newMeal.calories) || 0);
-            if (consumed < goal * 0.9 && newConsumed >= goal * 0.9 && newConsumed <= goal + 150) {
-                const supabase = supabaseRef.current;
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    logSquadEvent(user.id, 'calorie_target_hit', { calories: newConsumed });
+            const supabase = supabaseRef.current;
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (isEditMode && editingMealId && user) {
+                const title = newMealData.title || mealInput || "Logged Meal";
+                const desc = newMealData.description;
+                const text_entry = desc ? `${title} |:| ${desc}` : title;
+
+                const { data: updatedMeal, error } = await supabase
+                    .from("meals")
+                    .update({
+                        meal_type: selectedType,
+                        text_entry: text_entry,
+                        calories: newMealData.calories,
+                        protein: newMealData.protein,
+                        carbs: newMealData.carbs,
+                        fat: newMealData.fat,
+                        fibre: newMealData.fibre,
+                        sugar: newMealData.sugar,
+                        micronutrients: newMealData.micronutrients || null,
+                    })
+                    .eq("id", editingMealId)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                setMeals(prev => prev.map(m => m.id === editingMealId ? updatedMeal : m));
+                setIsEditMode(false);
+                setEditingMealId(null);
+            } else {
+                setMeals(prev => [newMealData, ...prev]);
+
+                const newConsumed = consumed + (Number(newMealData.calories) || 0);
+                if (consumed < goal * 0.9 && newConsumed >= goal * 0.9 && newConsumed <= goal + 150) {
+                    if (user) {
+                        logSquadEvent(user.id, 'calorie_target_hit', { calories: newConsumed });
+                    }
                 }
             }
 
             setMealInput("");
             setImageBase64(null);
         } catch (error) {
-            console.error("Error adding meal:", error);
-            alert("Sorry, there was an issue logging your meal. Please try again.");
+            console.error(isEditMode ? "Error editing meal:" : "Error adding meal:", error);
+            alert(`Sorry, there was an issue ${isEditMode ? 'updating' : 'logging'} your meal. Please try again.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -321,6 +365,69 @@ export default function NutritionToday() {
                         <ChevronRight className="w-5 h-5 text-brand-emerald" />
                     </div>
                 </motion.div>
+            )}
+
+            {/* AI Nutritionist Assessment Banner (Sundays) */}
+            {new Date().getDay() === 0 && (
+                <motion.button
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={async () => {
+                        // Demo: Create a mock report directly to show the feature works
+                        if (!profile) return;
+                        setIsLoading(true);
+                        try {
+                            const supabase = supabaseRef.current;
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) return;
+
+                            const startDate = new Date();
+                            startDate.setDate(startDate.getDate() - 7);
+
+                            const newReport = {
+                                user_id: user.id,
+                                week_start_date: startDate.toISOString().split('T')[0],
+                                week_end_date: new Date().toISOString().split('T')[0],
+                                macro_summary: {
+                                    protein: { avg: 175, target: proteinTarget },
+                                    carbs: { avg: 250, target: carbsTarget },
+                                    fat: { avg: 85, target: fatTarget },
+                                    fibre: { avg: 25, target: 30 }
+                                },
+                                micro_summary: {
+                                    deficiencies: [
+                                        { nutrient: "Magnesium", avg: 200, target: 375, unit: "mg" },
+                                        { nutrient: "Vit D", avg: 2, target: 5, unit: "mcg" }
+                                    ],
+                                    strengths: ["protein consistency", "sodium control"]
+                                },
+                                generated_advice: "You've had a solid week hitting your protein targets consistently, which is excellent for muscle recovery. However, your magnesium and Vitamin D levels are consistently low. Try adding a handful of pumpkin seeds or spinach to lunch to boost magnesium, and consider a Vitamin D supplement if you aren't getting midday sun."
+                            };
+
+                            await supabase.from("nutritionist_reports").insert(newReport);
+                            alert("AI Assessment Generated! Go to the 'Reports' tab to view it.");
+                        } catch (e) {
+                            console.error(e);
+                        } finally {
+                            setIsLoading(false);
+                        }
+                    }}
+                    className="w-full relative rounded-2xl p-4 bg-purple-500/10 border border-purple-500/30 overflow-hidden backdrop-blur-sm group text-left transition-all hover:bg-purple-500/20"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-purple-500/20 border border-purple-500/40 text-purple-400 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-purple-400">Analyze Weekly Trends</h4>
+                                <p className="text-[10px] uppercase tracking-widest text-purple-400/70 font-bold leading-tight mt-0.5">Generate AI Diet Assessment</p>
+                            </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-purple-400/50 group-hover:text-purple-400 transition-colors" />
+                    </div>
+                </motion.button>
             )}
 
             {/* Date Navigator */}
@@ -525,7 +632,7 @@ export default function NutritionToday() {
                             disabled={!mealInput.trim() || isSubmitting}
                             className="h-9 px-5 bg-brand-emerald text-brand-black text-sm font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50 disabled:grayscale flex-shrink-0"
                         >
-                            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add meal"}
+                            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (isEditMode ? "Update meal" : "Add meal")}
                         </button>
                     </div>
                 </div>
@@ -586,14 +693,21 @@ export default function NutritionToday() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3 flex-shrink-0 pl-4">
-                                            <div className="text-right">
+                                        <div className="flex items-center gap-2 flex-shrink-0 pl-4">
+                                            <div className="text-right mr-1">
                                                 <span className="text-lg font-bold">+{meal.calories}</span>
                                                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter text-right">{timeStr}</p>
                                             </div>
                                             <button
+                                                onClick={() => handleEditMealClick(meal)}
+                                                className="w-8 h-8 rounded-xl bg-white/5 hover:bg-brand-emerald/10 flex items-center justify-center transition-all"
+                                                title="Edit meal"
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5 text-muted-foreground hover:text-brand-emerald transition-colors" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDeleteMeal(meal.id)}
-                                                className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 flex items-center justify-center transition-all ml-2"
+                                                className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/10 flex items-center justify-center transition-all"
                                                 title="Delete meal"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-400 transition-colors" />

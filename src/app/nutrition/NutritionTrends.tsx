@@ -238,6 +238,15 @@ export default function NutritionTrends() {
                 ))}
             </div>
 
+            {/* View Weekly Analysis Shortcut */}
+            {view === "7d" && (
+                <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center -mt-2 mb-2">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest flex items-center gap-1">
+                        Looking for insights? Check the <span className="text-purple-400 flex items-center gap-0.5"><Crown className="w-3 h-3" /> Reports</span> tab.
+                    </p>
+                </motion.div>
+            )}
+
             {/* Calories Vertical Bar Chart */}
             <div className="p-8 bg-[rgba(255,255,255,0.02)] border border-white/5 rounded-[2.5rem] shadow-[0_4px_40px_rgba(0,0,0,0.1)] backdrop-blur-3xl">
                 <div className="flex justify-between items-start">

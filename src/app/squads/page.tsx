@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 import { FeedCard, FeedItem } from "@/components/squads/FeedCard";
 import { ProfileBadgeCard } from "@/components/ui/ProfileBadgeCard";
+import { MemberScoreModal } from "@/components/squads/MemberScoreModal";
 
 interface Squad {
     id: string;
@@ -24,6 +25,7 @@ interface LeaderboardMember {
     perfect_days: number;
     calorie_hits: number;
     reactions_given: number;
+    workouts?: number;
 }
 
 interface SquadMember {
@@ -62,6 +64,7 @@ function SquadsContent() {
     const [activeTab, setActiveTab] = useState<'feed' | 'leaderboard' | 'members'>('feed');
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
+    const [selectedMemberForScore, setSelectedMemberForScore] = useState<{ user_id: string; name: string } | null>(null);
     const [squadMembers, setSquadMembers] = useState<SquadMember[]>([]);
     const [isDataLoading, setIsDataLoading] = useState(false);
     const [isTrakPlus, setIsTrakPlus] = useState(false);
@@ -136,19 +139,60 @@ function SquadsContent() {
 
             if (data) setFeedItems(data as unknown as FeedItem[]);
         } else if (activeTab === 'leaderboard') {
-            // Leaderboard (Current week Mon-Sun)
             const today = new Date();
             const day = today.getDay();
             const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-            const startOfWeek = new Date(today.setDate(diff)).toISOString().split('T')[0];
-            const endOfWeek = new Date(today.setDate(diff + 6)).toISOString().split('T')[0];
+            const startOfWeekDate = new Date(today);
+            startOfWeekDate.setDate(diff);
+            startOfWeekDate.setHours(0, 0, 0, 0);
 
-            const { data } = await supabase.rpc('calculate_squad_leaderboard', {
-                target_squad_id: squadId,
-                start_date: startOfWeek,
-                end_date: endOfWeek
-            });
-            if (data) setLeaderboard(data);
+            const { data: feedData } = await supabase
+                .from('squad_feed')
+                .select(`*, users!inner(name)`)
+                .eq('squad_id', squadId)
+                .gte('created_at', startOfWeekDate.toISOString());
+
+            if (feedData) {
+                const scores: Record<string, LeaderboardMember> = {};
+
+                feedData.forEach((event: any) => {
+                    if (!scores[event.user_id]) {
+                        scores[event.user_id] = {
+                            user_id: event.user_id,
+                            name: event.users?.name || 'Unknown',
+                            total_score: 0,
+                            habit_completions: 0,
+                            perfect_days: 0,
+                            calorie_hits: 0,
+                            workouts: 0,
+                            reactions_given: 0
+                        };
+                    }
+                    const userScore = scores[event.user_id];
+
+                    if (event.event_type === 'habit_completed') { userScore.habit_completions++; userScore.total_score += 5; }
+                    if (event.event_type === 'perfect_day') { userScore.perfect_days++; userScore.total_score += 25; }
+                    if (event.event_type === 'workout_completed') { userScore.workouts = (userScore.workouts || 0) + 1; userScore.total_score += 50; }
+                    if (event.event_type === 'calorie_target_hit') { userScore.calorie_hits++; userScore.total_score += 50; }
+                });
+
+                const { data: reactionsData } = await supabase
+                    .from('squad_reactions')
+                    .select('user_id')
+                    .gte('created_at', startOfWeekDate.toISOString());
+
+                if (reactionsData) {
+                    reactionsData.forEach((r: any) => {
+                        if (scores[r.user_id]) {
+                            scores[r.user_id].reactions_given++;
+                            scores[r.user_id].total_score += 2;
+                        }
+                    });
+                }
+
+                const sortedLeaderboard = Object.values(scores).sort((a, b) => b.total_score - a.total_score);
+                setLeaderboard(sortedLeaderboard);
+            }
         } else if (activeTab === 'members') {
             const { data } = await supabase
                 .from('squad_members')
@@ -164,12 +208,12 @@ function SquadsContent() {
                 // For each member, fetch their best habit streak and workout streak
                 const enriched = await Promise.all(
                     (data as unknown as Omit<SquadMember, 'habitsStreak' | 'fitnessStreak'>[]).map(async (member) => {
-                        // Best habit streak
+                        // Best habit streak (only perfect days)
                         const { data: streaks } = await supabase
                             .from('habit_streaks')
                             .select('best_streak')
                             .eq('user_id', member.user_id)
-                            .order('best_streak', { ascending: false })
+                            .eq('habit_id', 'perfect_days')
                             .limit(1);
                         const habitsStreak = streaks?.[0]?.best_streak || 0;
 
@@ -664,7 +708,8 @@ function SquadsContent() {
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: index * 0.08, type: "spring", bounce: 0.3 }}
                                         key={member.user_id}
-                                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${isTopThree ? medalColors[index] : 'bg-white/[0.02] border-white/5'}`}
+                                        onClick={() => setSelectedMemberForScore({ user_id: member.user_id, name: member.name })}
+                                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer hover:bg-white/[0.05] ${isTopThree ? medalColors[index] : 'bg-white/[0.02] border-white/5'}`}
                                     >
                                         <div className="flex items-center gap-3.5">
                                             <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${isTopThree ? rankBgColors[index] : 'bg-white/10 text-muted-foreground'}`}>
@@ -675,16 +720,12 @@ function SquadsContent() {
                                                     {member.name}
                                                     {index === 0 && <span className="ml-1.5 text-[9px] font-black uppercase tracking-widest text-amber-500/70">Leader</span>}
                                                 </p>
-                                                <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                                <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5 focus-within">
                                                     <span>{member.habit_completions} habits</span>
                                                     <span className="text-white/10">·</span>
                                                     <span>{member.perfect_days} perfect</span>
-                                                    {member.calorie_hits > 0 && (
-                                                        <>
-                                                            <span className="text-white/10">·</span>
-                                                            <span>{member.calorie_hits} cal hits</span>
-                                                        </>
-                                                    )}
+                                                    <span className="text-white/10">·</span>
+                                                    <span>{member.workouts || 0} workout</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -729,6 +770,9 @@ function SquadsContent() {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
+                                    onClick={() => setSelectedMemberForScore({ user_id: member.user_id, name })}
+                                    className="cursor-pointer"
+                                    title={`View ${name}'s points breakdown`}
                                 >
                                     {member.role === 'admin' && (
                                         <p className="text-[9px] uppercase tracking-widest font-black text-amber-500 mb-1.5 pl-1">👑 Admin</p>
@@ -819,6 +863,16 @@ function SquadsContent() {
                             </button>
                         </motion.div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {selectedMemberForScore && (
+                    <MemberScoreModal
+                        member={selectedMemberForScore}
+                        squadId={activeSquad.id}
+                        onClose={() => setSelectedMemberForScore(null)}
+                    />
                 )}
             </AnimatePresence>
 

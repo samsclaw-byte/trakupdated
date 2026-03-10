@@ -58,9 +58,8 @@ interface HabitLog {
 
 const DEFAULT_HABITS: Omit<HabitDefinition, 'id'>[] = [
     { name: "Multivitamin", icon: "Pill", color: "purple-400", target_value: 1, unit: null, increment_by: 1, track_type: "boolean", sort_order: 0 },
-    { name: "Creatine", icon: "Zap", color: "yellow-400", target_value: 5, unit: "g", increment_by: 5, track_type: "count", sort_order: 1 },
-    { name: "Water", icon: "Droplets", color: "blue-400", target_value: 8, unit: "glasses", increment_by: 1, track_type: "count", sort_order: 2 },
-    { name: "Fruit", icon: "Apple", color: "orange-400", target_value: 2, unit: "portions", increment_by: 1, track_type: "count", sort_order: 3 },
+    { name: "Water", icon: "Droplets", color: "blue-400", target_value: 8, unit: "glasses", increment_by: 1, track_type: "count", sort_order: 1 },
+    { name: "Fruit", icon: "Apple", color: "orange-400", target_value: 2, unit: "portions", increment_by: 1, track_type: "count", sort_order: 2 },
 ];
 
 export default function HabitsToday() {
@@ -222,6 +221,9 @@ export default function HabitsToday() {
 
             setCelebratingId(habit.id);
             setTimeout(() => setCelebratingId(null), 1200);
+
+            // Log single habit completion for squad points
+            logSquadEvent(user.id, 'habit_completed', { habit_name: habit.name });
 
             // Process streak and check for milestone
             const streakResult = await processHabitStreak(user.id, habit.id, habit.name);
