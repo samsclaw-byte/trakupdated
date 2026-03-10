@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Loader2, Trophy, Flame, Target, Dumbbell, Activity } from "lucide-react";
+import { X, Loader2, Flame, Target, Dumbbell, Activity } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 interface MemberScoreModalProps {
@@ -40,7 +40,7 @@ export function MemberScoreModal({ member, squadId, onClose }: MemberScoreModalP
             const agg = { habits: 0, perfect: 0, workouts: 0, cals: 0, score: 0 };
 
             if (feedData) {
-                feedData.forEach((event: any) => {
+                feedData.forEach((event: { event_type: string; created_at: string }) => {
                     const eventDate = new Date(event.created_at);
                     let dayIdx = eventDate.getDay() - 1;
                     if (dayIdx === -1) dayIdx = 6;
@@ -115,7 +115,7 @@ export function MemberScoreModal({ member, squadId, onClose }: MemberScoreModalP
     );
 }
 
-function BreakdownRow({ icon: Icon, color, bg, label, count, pts }: { icon: any, color: string, bg: string, label: string, count: number, pts: number }) {
+function BreakdownRow({ icon: Icon, color, bg, label, count, pts }: { icon: React.ElementType, color: string, bg: string, label: string, count: number, pts: number }) {
     if (count === 0) return null;
     return (
         <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
