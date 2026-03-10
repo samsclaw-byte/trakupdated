@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Key, X, Loader2, Trophy, Activity, Share2, Crown, LogOut } from "lucide-react";
+import { Users, Plus, Key, X, Loader2, Trophy, Activity, Share2, LogOut } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 import { FeedCard, FeedItem } from "@/components/squads/FeedCard";
@@ -155,7 +155,7 @@ function SquadsContent() {
             if (feedData) {
                 const scores: Record<string, LeaderboardMember> = {};
 
-                feedData.forEach((event: any) => {
+                feedData.forEach((event: { user_id: string; event_type: string; users?: { name?: string } }) => {
                     if (!scores[event.user_id]) {
                         scores[event.user_id] = {
                             user_id: event.user_id,
@@ -182,7 +182,7 @@ function SquadsContent() {
                     .gte('created_at', startOfWeekDate.toISOString());
 
                 if (reactionsData) {
-                    reactionsData.forEach((r: any) => {
+                    reactionsData.forEach((r: { user_id: string }) => {
                         if (scores[r.user_id]) {
                             scores[r.user_id].reactions_given++;
                             scores[r.user_id].total_score += 2;
@@ -266,7 +266,7 @@ function SquadsContent() {
             .on(
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'squad_feed', filter: `squad_id=eq.${currentSquad.id}` },
-                (payload) => {
+                (_payload) => {
                     // Refetch neatly (could also manually inject into state, but refetch guarantees we get the joined user data + reactions)
                     fetchDashboardData(currentSquad.id);
                 }
@@ -274,7 +274,7 @@ function SquadsContent() {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'squad_reactions' },
-                (payload) => {
+                (_payload) => {
                     // We just refetch the feed to update reaction counts globally
                     fetchDashboardData(currentSquad.id);
                 }

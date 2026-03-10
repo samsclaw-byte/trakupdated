@@ -66,7 +66,7 @@ export default function NutritionToday() {
         const descriptionMatch = meal.text_entry.match(/\|:\|\s(.*)/);
         const description = descriptionMatch ? descriptionMatch[1] : (meal.text_entry.includes('|:|') ? meal.text_entry.split(' |:| ')[1] : meal.text_entry);
         setMealInput(description.trim());
-        setSelectedType(meal.meal_type as any);
+        setSelectedType(meal.meal_type as "Breakfast" | "Lunch" | "Dinner" | "Snack");
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 

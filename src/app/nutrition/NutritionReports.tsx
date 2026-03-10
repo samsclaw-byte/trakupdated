@@ -1,16 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Sparkles, Calendar, ChevronRight } from "lucide-react";
+import { Sparkles, Calendar, ChevronRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import NutritionistReportModal from "./NutritionistReportModal";
+
+export interface MacroStat { avg: number; target: number; }
+export interface MicroDeficiency { nutrient: string; avg: number; target: number; unit: string; }
+export interface MacroSummary { protein?: MacroStat; carbs?: MacroStat; fat?: MacroStat; fibre?: MacroStat; }
+export interface MicroSummary { deficiencies?: MicroDeficiency[]; strengths?: string[]; }
 
 export interface NutritionistReport {
     id: string;
     user_id: string;
     week_start_date: string;
     week_end_date: string;
-    macro_summary: any;
-    micro_summary: any;
+    macro_summary: MacroSummary;
+    micro_summary: MicroSummary;
     generated_advice: string;
     created_at: string;
 }

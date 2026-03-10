@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, TrendingUp, AlertCircle, Apple } from "lucide-react";
-import { NutritionistReport } from "./NutritionReports";
+import { NutritionistReport, MacroSummary, MicroSummary, MicroDeficiency } from "./NutritionReports";
 
 interface NutritionistReportModalProps {
     isOpen: boolean;
@@ -15,8 +15,8 @@ export default function NutritionistReportModal({ isOpen, onClose, report }: Nut
         return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
-    const macro = report.macro_summary || {};
-    const micro = report.micro_summary || {};
+    const macro = (report.macro_summary || {}) as MacroSummary;
+    const micro = (report.micro_summary || {}) as MicroSummary;
 
     return (
         <AnimatePresence>
@@ -69,7 +69,7 @@ export default function NutritionistReportModal({ isOpen, onClose, report }: Nut
                                 </h4>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {['protein', 'carbs', 'fat', 'fibre'].map((macroKey) => {
-                                        const stat = macro[macroKey];
+                                        const stat = macro[macroKey as keyof MacroSummary];
                                         if (!stat) return null;
                                         const isLow = stat.avg < stat.target * 0.8;
                                         const isHigh = stat.avg > stat.target * 1.2;
@@ -83,8 +83,8 @@ export default function NutritionistReportModal({ isOpen, onClose, report }: Nut
                                                 </div>
                                                 <div className="mt-3">
                                                     <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-sm ${isLow ? "bg-red-400/20 text-red-400" :
-                                                            isHigh ? "bg-amber-400/20 text-amber-400" :
-                                                                "bg-brand-emerald/20 text-brand-emerald"
+                                                        isHigh ? "bg-amber-400/20 text-amber-400" :
+                                                            "bg-brand-emerald/20 text-brand-emerald"
                                                         }`}>
                                                         {isLow ? "Low" : isHigh ? "High" : "Optimal"}
                                                     </span>
@@ -103,7 +103,7 @@ export default function NutritionistReportModal({ isOpen, onClose, report }: Nut
                                         <AlertCircle className="w-4 h-4 text-red-400" /> Micronutrient Deficiencies
                                     </h4>
                                     <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-5 space-y-3">
-                                        {micro.deficiencies.map((def: any, i: number) => (
+                                        {micro.deficiencies.map((def: MicroDeficiency, i: number) => (
                                             <div key={i} className="flex items-center justify-between border-b border-red-500/10 pb-3 last:border-0 last:pb-0">
                                                 <div>
                                                     <h5 className="font-bold text-red-400 capitalize">{def.nutrient}</h5>
