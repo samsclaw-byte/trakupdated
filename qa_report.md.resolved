@@ -1,0 +1,115 @@
+# Trak QA Audit Report
+**Account:** sam.curtis100@gmail.com  
+**Date:** 10 March 2026  
+**Environment:** https://trakupdated.vercel.app
+
+---
+
+## Summary
+
+| Screen | Status | Notes |
+|--------|--------|-------|
+| Landing / Login | ✅ PASS | Renders cleanly, Google Sign-In only |
+| Dashboard / Home | ⚠️ PARTIAL | Pillar counters show 0 — data not loading for today |
+| Nutrition > Today | ✅ PASS | Meal shows correctly, Edit button visible |
+| Nutrition > Trends | ✅ PASS | Tab switches correctly |
+| Nutrition > Reports | ✅ PASS | Empty state shown (no reports yet — correct) |
+| Fitness > Today | ✅ PASS | Loads, 0 workouts for today (correct) |
+| Fitness > Trends (7d) | ❌ FAIL | 0 workouts shown despite swimming logged |
+| Fitness > Trends (28d) | ❌ FAIL | All 28 days empty — consistency grid blank |
+| Habits | ⚠️ PARTIAL | Habits load (5 total, 1 completed), Multivitamin streak shows 0 DAYS |
+| Squads > Feed | ✅ PASS | Activity feed shows with emoji reactions |
+| Squads > Leaderboard | ⚠️ PARTIAL | 4 members showing — Sam Curtis appears TWICE |
+| Squads > Members | ✅ PASS | Member cards render |
+| Profile | – | Not captured in this session |
+
+---
+
+## Detailed Findings
+
+### 🔴 BUG 1 — Dashboard Pillars All Show 0
+**Screen:** Home / Dashboard  
+**Severity:** High  
+**Description:** All three pillar score cards (Nutrition, Fitness, Habits) show `0` even when there is a logged meal for today and a completed habit.
+
+![Dashboard](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/dashboard_home_1773152279004.png)
+
+**Likely cause:** Dashboard pillar scores may be calculating from a different date range, or the streak/progress query is not matching the user's timezone. The "Let's Go" splash also appears — suggesting the onboarding state may be presenting before real data loads.
+
+---
+
+### 🔴 BUG 2 — Fitness Trends Shows 0 Workouts Despite Swimming Workout Logged
+**Screen:** Fitness > Trends (7 Days and 28 Days)  
+**Severity:** High  
+**Description:** Both 7-day and 28-day views show `0 WORKOUTS` and `0 BURNED`. The consistency grid is entirely empty. This was supposed to be fixed, but the swimming workout logged yesterday is still not appearing.
+
+![Fitness Trends 7d](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/.system_generated/click_feedback/click_feedback_1773152503028.png)
+![Fitness Trends 28d](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/.system_generated/click_feedback/click_feedback_1773152516814.png)
+
+**Likely cause:** The timezone offset fix in [FitnessTrends.tsx](file:///c:/Users/samcu/.gemini/antigravity/scratch/trak/src/app/fitness/FitnessTrends.tsx) may still be off by a day. The workout was logged at a time that shifts to a different UTC date. Worth checking the `workout_date` stored value in Supabase vs the local date.
+
+---
+
+### 🟡 BUG 3 — Sam Curtis Appears Twice on Leaderboard
+**Screen:** Squads > Leaderboard  
+**Severity:** Medium  
+**Description:** On the "Curtis crew" squad, **Sam Curtis appears at both #2 (66 pts) and #4 (5 pts)**. This suggests two separate user IDs for Sam Curtis are being aggregated separately, or a duplicate squad membership record exists.
+
+![Leaderboard](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/.system_generated/click_feedback/click_feedback_1773152593927.png)
+
+**Likely cause:** Two distinct user accounts may share the display name "Sam Curtis," or a user has been added to the squad twice under different user IDs. Check `squad_members` table for duplicate `user_id` entries.
+
+---
+
+### 🟡 BUG 4 — Habit Streak Showing 0 Days for Multivitamin
+**Screen:** Habits > Today  
+**Severity:** Medium  
+**Description:** The Multivitamin habit shows `0 DAYS` streak badge even though it should have a streak if previously completed. Creatine correctly shows `🔥 1 DAY`.
+
+![Habits](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/.system_generated/click_feedback/click_feedback_1773152558539.png)
+
+**Likely cause:** The Multivitamin habit may have been added as a default habit but never completed before today, so streak = 0 is technically correct. However the `0 DAYS` badge is visually misleading — it may be better to hide it when 0.
+
+---
+
+### ✅ PASS — Nutrition Today with Meal Data
+**Screen:** Nutrition > Today  
+**Description:** A "Chicken And Broccoli Meal" from today is showing correctly with macros P:75g, C:10g, F:15g, Fi:5g, S:2g. The Edit (✏️) button is visible on the meal card. The meal entry appears under "Recent Activity" correctly.
+
+![Nutrition Today](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/.system_generated/click_feedback/click_feedback_1773152432263.png)
+
+---
+
+### ✅ PASS — Squads Activity Feed
+**Screen:** Squads > Activity Feed  
+**Description:** Feed shows recent activity: habit check-off, calorie target hit, perfect day — all with emoji reactions. Feed is scrollable and loading correctly.
+
+![Squads Feed](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/.system_generated/click_feedback/click_feedback_1773152576441.png)
+
+---
+
+### ✅ PASS — Landing Page
+**Screen:** Landing  
+**Description:** Landing page loads correctly. "Sign in with Google" is the only CTA — clean and intentional.
+
+![Landing](file:///C:/Users/samcu/.gemini/antigravity/brain/38b94ad7-f8e8-4f63-90ea-fbeb0ca423ce/landing_page_full_1773151866616.png)
+
+---
+
+## Priority Action Items
+
+| Priority | Bug | Suggested Fix |
+|----------|-----|---------------|
+| 🔴 P1 | Fitness Trends showing 0 workouts | Check `workout_date` column values in Supabase vs timezone offset logic in [FitnessTrends.tsx](file:///c:/Users/samcu/.gemini/antigravity/scratch/trak/src/app/fitness/FitnessTrends.tsx) |
+| 🔴 P1 | Dashboard pillar scores all 0 | Debug streak/progress queries for today's date — likely a timezone mismatch or race condition |
+| 🟡 P2 | Sam Curtis appearing twice on leaderboard | Check `squad_members` and `users` tables for duplicate entries for sam.curtis100@gmail.com |
+| 🟡 P3 | Habit streak badge showing 0 when not yet completed | Consider hiding the `0 DAYS` badge or replacing with "Start today!" |
+
+---
+
+## General UX Observations
+
+- **Login:** Only Google OAuth is offered — no email/password option visible. This is the intended design but worth confirming newer users don't expect an email flow.
+- **Dashboard splash screen:** "Let's Go" button and the "Consistent Action" motivational screen may feel like a splash delay before real content. Consider auto-dismissing after a timeout if the user has used the app before.
+- **Fitness Today "No workouts logged yet today"** — correct empty state, looks clean.
+- **Squads multi-squad support** — 3 squads visible (Curtis crew, test, Curtis crew) — the double "Curtis crew" tab is a bit confusing UX-wise.

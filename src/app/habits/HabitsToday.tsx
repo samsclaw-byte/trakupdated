@@ -73,8 +73,17 @@ export default function HabitsToday() {
     const [milestone, setMilestone] = useState<{ milestone: StreakMilestone; habitName: string } | null>(null);
     const [bestStreaks, setBestStreaks] = useState<Record<string, number>>({});
     const [activeStreaks, setActiveStreaks] = useState<Record<string, number>>({});
+    const [viewingYesterday, setViewingYesterday] = useState(false);
 
     const supabaseRef = useRef(createClient());
+
+    const getDateStr = (offset: number) => {
+        const d = new Date();
+        d.setDate(d.getDate() + offset);
+        return d.toISOString().split('T')[0];
+    };
+
+    const viewingDateStr = viewingYesterday ? getDateStr(-1) : getDateStr(0);
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -117,13 +126,12 @@ export default function HabitsToday() {
 
         if (habitDefs) setHabits(habitDefs);
 
-        // Fetch today's logs
-        const today = new Date().toISOString().split('T')[0];
+        // Fetch selected date's logs
         const { data: todayLogs } = await supabase
             .from('habit_logs')
             .select('*')
             .eq('user_id', user.id)
-            .eq('date', today);
+            .eq('date', viewingDateStr);
 
         if (todayLogs) {
             const logMap: Record<string, HabitLog> = {};
@@ -154,7 +162,7 @@ export default function HabitsToday() {
     useEffect(() => {
         const timer = setTimeout(() => loadData(), 0);
         return () => clearTimeout(timer);
-    }, [loadData]);
+    }, [loadData, viewingDateStr]);
 
     // Check if all habits are done
     useEffect(() => {
@@ -346,6 +354,28 @@ export default function HabitsToday() {
                     onDismiss={() => setMilestone(null)}
                 />
             )}
+
+            {/* Yesterday / Today Toggle */}
+            <div className="flex items-center justify-between">
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                    <button
+                        onClick={() => { setViewingYesterday(false); setLogs({}); setAllDone(false); }}
+                        className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${!viewingYesterday ? 'bg-brand-emerald text-black shadow-sm' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                        Today
+                    </button>
+                    <button
+                        onClick={() => { setViewingYesterday(true); setLogs({}); setAllDone(false); }}
+                        className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${viewingYesterday ? 'bg-white/15 text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                        Yesterday
+                    </button>
+                </div>
+                {viewingYesterday && (
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Read-only</p>
+                )}
+            </div>
+
             {/* Completion Ring */}
             <div className="relative flex flex-col items-center justify-center py-4">
                 {isLoading ? (

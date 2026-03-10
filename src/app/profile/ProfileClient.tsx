@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 import { ProfileBadgeCard } from "@/components/ui/ProfileBadgeCard";
 import { PillarProgressCards } from "@/components/ui/PillarProgressCards";
+import { ProfileProgressModal } from "@/components/ui/ProfileProgressModal";
 
 interface UserProfile {
     name: string;
@@ -22,6 +23,8 @@ export default function ProfileClient() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [pillarStreaks, setPillarStreaks] = useState({ nutrition: 0, habits: 0, fitness: 0 });
+    const [showProgress, setShowProgress] = useState(false);
+    const [userId, setUserId] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
 
@@ -32,6 +35,7 @@ export default function ProfileClient() {
                 router.push('/');
                 return;
             }
+            setUserId(user.id);
 
             const { data: dbUser } = await supabase
                 .from('users')
@@ -172,7 +176,15 @@ export default function ProfileClient() {
                                 nutritionStreak={pillarStreaks.nutrition}
                                 habitsStreak={pillarStreaks.habits}
                                 fitnessStreak={pillarStreaks.fitness}
+                                tappable
+                                name={profile?.name}
                             />
+                            <button
+                                onClick={() => setShowProgress(true)}
+                                className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-brand-emerald transition-colors flex items-center gap-1"
+                            >
+                                View 28-day progress →
+                            </button>
                         </div>
 
                         {/* Pillar Progress Cards */}
@@ -272,6 +284,14 @@ export default function ProfileClient() {
                     </>
                 )}
             </div>
+
+            {/* 28-day progress modal */}
+            {showProgress && userId && (
+                <ProfileProgressModal
+                    userId={userId}
+                    onClose={() => setShowProgress(false)}
+                />
+            )}
 
             <BottomTabBar />
         </div>

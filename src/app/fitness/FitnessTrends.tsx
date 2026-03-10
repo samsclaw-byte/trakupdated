@@ -154,7 +154,7 @@ export default function FitnessTrends() {
 
                 <div className={`grid gap-2 ${timeframe === 7 ? "grid-cols-7" : "grid-cols-7"}`}>
                     {timeframe === 7 && dailyData.map((day, i) => (
-                        <div key={i} className="flex flex-col items-center gap-2">
+                        <div key={i} className="flex flex-col items-center gap-1.5">
                             <span className="text-[10px] font-medium text-muted-foreground uppercase">
                                 {getWeekday(day.date)}
                             </span>
@@ -169,6 +169,9 @@ export default function FitnessTrends() {
                             >
                                 {day.didWorkout && getIconForWorkout(day.type)}
                             </motion.div>
+                            <span className="text-[9px] text-muted-foreground/60 font-medium">
+                                {day.date.getDate()}
+                            </span>
                         </div>
                     ))}
 
