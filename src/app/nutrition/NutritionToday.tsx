@@ -59,6 +59,7 @@ export default function NutritionToday() {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingMealId, setEditingMealId] = useState<string | null>(null);
+    const mealInputRef = useRef<HTMLDivElement>(null);
 
     const handleEditMealClick = (meal: Meal) => {
         setIsEditMode(true);
@@ -67,7 +68,17 @@ export default function NutritionToday() {
         const description = descriptionMatch ? descriptionMatch[1] : (meal.text_entry.includes('|:|') ? meal.text_entry.split(' |:| ')[1] : meal.text_entry);
         setMealInput(description.trim());
         setSelectedType(meal.meal_type as "Breakfast" | "Lunch" | "Dinner" | "Snack");
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll the input into view and briefly pulse it
+        setTimeout(() => {
+            mealInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            mealInputRef.current?.focus();
+        }, 50);
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditMode(false);
+        setEditingMealId(null);
+        setMealInput('');
     };
 
     const supabaseRef = useRef(createClient());
@@ -610,7 +621,20 @@ export default function NutritionToday() {
                 </button>
 
                 {/* Standard Text Logging */}
-                <div className="flex flex-col gap-3 bg-white/5 border border-white/10 rounded-3xl p-3 transition-all focus-within:bg-white/[0.07] focus-within:border-brand-emerald/50">
+                <div
+                    ref={mealInputRef}
+                    tabIndex={-1}
+                    className={`flex flex-col gap-3 rounded-3xl p-3 transition-all outline-none ${isEditMode
+                            ? 'bg-brand-emerald/10 border border-brand-emerald/60 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                            : 'bg-white/5 border border-white/10 focus-within:bg-white/[0.07] focus-within:border-brand-emerald/50'
+                        }`}
+                >
+                    {isEditMode && (
+                        <div className="flex items-center justify-between px-3 pt-1">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-brand-emerald">✏️ Editing meal — amend below</p>
+                            <button onClick={handleCancelEdit} className="text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-white/80 transition-colors">Cancel</button>
+                        </div>
+                    )}
                     <textarea
                         placeholder="Or manually type it (e.g. 2 eggs and a black coffee)..."
                         className="w-full bg-transparent outline-none px-3 py-2 text-sm resize-none min-h-[60px]"
