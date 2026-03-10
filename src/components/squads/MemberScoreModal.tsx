@@ -6,7 +6,7 @@ import { X, Loader2, Trophy, Flame, Target, Dumbbell, Activity } from "lucide-re
 import { createClient } from "@/utils/supabase/client";
 
 interface MemberScoreModalProps {
-    member: any;
+    member: { user_id: string; name: string };
     squadId: string;
     onClose: () => void;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, TrendingUp, Trophy, Zap, Calendar, Crown } from "lucide-react";
+import { ChevronLeft, TrendingUp, Zap, Crown } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";

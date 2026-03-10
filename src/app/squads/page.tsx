@@ -266,7 +266,7 @@ function SquadsContent() {
             .on(
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'squad_feed', filter: `squad_id=eq.${currentSquad.id}` },
-                (_payload) => {
+                () => {
                     // Refetch neatly (could also manually inject into state, but refetch guarantees we get the joined user data + reactions)
                     fetchDashboardData(currentSquad.id);
                 }
@@ -274,7 +274,7 @@ function SquadsContent() {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'squad_reactions' },
-                (_payload) => {
+                () => {
                     // We just refetch the feed to update reaction counts globally
                     fetchDashboardData(currentSquad.id);
                 }
