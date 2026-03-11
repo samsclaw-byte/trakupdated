@@ -60,6 +60,7 @@ function DayColumn({ entry }: { entry: DayEntry }) {
 export function ProfileProgressModal({ userId, onClose }: ProfileProgressModalProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [days, setDays] = useState<DayEntry[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [activeHabitCount, setActiveHabitCount] = useState(0);
 
     useEffect(() => {

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
             // Existing users: redirect to a client-side page that checks localStorage
             // for any pending invite redirect, then navigates accordingly
-            return NextResponse.redirect(`${baseUrl}/nutrition`)
+            return NextResponse.redirect(`${baseUrl}/hub`)
         }
     }
 
