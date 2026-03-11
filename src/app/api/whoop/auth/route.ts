@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
  * GET /api/whoop/auth
  * Redirects the user to Whoop's OAuth2 authorization page.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -20,7 +20,7 @@ export async function GET() {
         }
 
         // Determine callback URL
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
         const redirectUri = `${appUrl}/api/whoop/callback`;
 
         // CSRF state token

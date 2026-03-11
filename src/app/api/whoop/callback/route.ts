@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         // Exchange code for tokens
         const clientId = process.env.WHOOP_CLIENT_ID!;
         const clientSecret = process.env.WHOOP_CLIENT_SECRET!;
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
         const redirectUri = `${appUrl}/api/whoop/callback`;
 
         const tokenRes = await fetch("https://api.prod.whoop.com/oauth/oauth2/token", {
