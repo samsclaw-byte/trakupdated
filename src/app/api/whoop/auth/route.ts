@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
             "read:cycles",
             "read:profile",
             "read:body_measurement",
+            "offline",
         ].join(" ");
 
         const authUrl = new URL("https://api.prod.whoop.com/oauth/oauth2/auth");
