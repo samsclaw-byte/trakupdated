@@ -31,6 +31,7 @@ export async function refreshWhoopToken(refreshToken: string): Promise<{
             refresh_token: refreshToken,
             client_id: process.env.WHOOP_CLIENT_ID!,
             client_secret: process.env.WHOOP_CLIENT_SECRET!,
+            scope: "offline",
         }),
     });
 
