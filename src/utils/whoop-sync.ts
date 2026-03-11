@@ -158,9 +158,18 @@ export async function syncWhoopData(
             const dateStr = startDt.toISOString().split("T")[0];
             const caloriesBurned = Math.round(w.score.kilojoule / 4.184);
 
+            const externalId = `whoop_${w.id}`;
+
+            // Delete existing workout with same external_id (if any) then insert
+            await supabase
+                .from("workouts")
+                .delete()
+                .eq("user_id", userId)
+                .eq("external_id", externalId);
+
             const { error: wErr } = await supabase
                 .from("workouts")
-                .upsert({
+                .insert({
                     user_id: userId,
                     activity_type: mapWhoopSport(w.sport_id),
                     intensity: w.score.strain > 14 ? "high" : w.score.strain > 8 ? "moderate" : "light",
@@ -168,7 +177,7 @@ export async function syncWhoopData(
                     calories_burned: caloriesBurned,
                     date: dateStr,
                     source: "whoop",
-                    external_id: `whoop_${w.id}`,
+                    external_id: externalId,
                     raw_data: {
                         sport_id: w.sport_id,
                         strain: w.score.strain,
@@ -178,12 +187,12 @@ export async function syncWhoopData(
                         altitude_gain_meter: w.score.altitude_gain_meter ?? null,
                         zone_duration: w.score.zone_duration ?? null,
                     },
-                }, { onConflict: "external_id" });
+                });
 
             if (wErr) {
-                console.error(`[Whoop Sync] Workout upsert error:`, wErr.message);
+                console.error(`[Whoop Sync] Workout insert error:`, wErr.message);
                 if (!results.workout_error) {
-                    results.workout_error = `DB upsert failed: ${wErr.message}`;
+                    results.workout_error = `DB insert failed: ${wErr.message}`;
                 }
             } else {
                 results.workouts_synced++;

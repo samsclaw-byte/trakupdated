@@ -61,14 +61,18 @@ export async function fetchWhoopAPI(
         const refreshed = await refreshWhoopToken(tokens.refresh_token);
         accessToken = refreshed.access_token;
 
+        // Update the tokens object in-memory so subsequent calls use new tokens
+        tokens.access_token = refreshed.access_token;
+        tokens.refresh_token = refreshed.refresh_token;
+        tokens.expires_at = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+
         // Update in DB
-        const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
         await supabase
             .from("whoop_tokens")
             .update({
                 access_token: refreshed.access_token,
                 refresh_token: refreshed.refresh_token,
-                expires_at: newExpiry,
+                expires_at: tokens.expires_at,
                 updated_at: new Date().toISOString(),
             })
             .eq("user_id", userId);
