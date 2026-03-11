@@ -301,7 +301,7 @@ export default function ProfileClient() {
                                             onClick={async () => {
                                                 setWhoopSyncing(true);
                                                 try {
-                                                    const res = await fetch('/api/whoop/sync', { method: 'POST' });
+                                                    const res = await fetch('/api/whoop/sync?days=90', { method: 'POST' });
                                                     const logData = await res.json();
                                                     if (res.ok) {
                                                         setWhoopLastSync(new Date().toLocaleTimeString());

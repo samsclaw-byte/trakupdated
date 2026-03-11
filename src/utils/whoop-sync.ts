@@ -85,6 +85,8 @@ export interface SyncResults {
 async function fetchAllPages<T>(endpoint: string, tokens: any, supabase: SupabaseClient, userId: string): Promise<T[]> {
     const allRecords: T[] = [];
     let nextToken: string | undefined = undefined;
+    let pageCount = 0;
+    const maxPages = 20; // Safety limit
 
     do {
         const separator = endpoint.includes("?") ? "&" : "?";
@@ -92,13 +94,19 @@ async function fetchAllPages<T>(endpoint: string, tokens: any, supabase: Supabas
             ? `${endpoint}${separator}nextToken=${encodeURIComponent(nextToken)}`
             : endpoint;
 
-        const response = await fetchWhoopAPI(url, tokens, supabase, userId) as PaginatedResponse<T>;
-        if (response.records) {
-            allRecords.push(...response.records);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await fetchWhoopAPI(url, tokens, supabase, userId) as any;
+        const records = response.records || response.data || [];
+        if (records.length > 0) {
+            allRecords.push(...records);
         }
-        nextToken = response.next_token;
-    } while (nextToken);
+        // Whoop v2 uses next_token for pagination
+        nextToken = response.next_token || response.nextToken || undefined;
+        pageCount++;
+        console.log(`[Whoop Pagination] Page ${pageCount}: ${records.length} records, nextToken: ${nextToken ? 'yes' : 'no'}`);
+    } while (nextToken && pageCount < maxPages);
 
+    console.log(`[Whoop Pagination] Total: ${allRecords.length} records across ${pageCount} pages`);
     return allRecords;
 }
 

@@ -43,7 +43,7 @@ export default function WhoopHubClient() {
     const handleManualSync = useCallback(async () => {
         setIsSyncing(true);
         try {
-            const res = await fetch("/api/whoop/sync", { method: "POST" });
+            const res = await fetch("/api/whoop/sync?days=7", { method: "POST" });
             const result = await res.json();
             if (result.workout_error || result.recovery_error) {
                 alert(`Sync had errors: ${JSON.stringify(result)}`);
@@ -108,9 +108,9 @@ export default function WhoopHubClient() {
                 <button
                     onClick={handleManualSync}
                     disabled={isSyncing}
-                    className="text-xs font-bold text-muted-foreground hover:text-white transition-colors uppercase tracking-widest px-3 py-1.5 bg-white/5 rounded-full"
+                    className="text-xs font-bold text-brand-emerald hover:text-white transition-colors uppercase tracking-widest px-4 py-2 bg-brand-emerald/10 border border-brand-emerald/30 rounded-full hover:bg-brand-emerald/20"
                 >
-                    {isSyncing ? "Syncing..." : "Sync"}
+                    {isSyncing ? "Syncing..." : "⚡ Sync"}
                 </button>
             </div>
 
@@ -346,6 +346,8 @@ function TrendsView({ data, period, onChangePeriod }: {
                                 : `${Math.round(avgVal)}${config.unit}`
                             : "--"}
                         data={chartData}
+                        dates={data.map((d: DailyData) => d.date)}
+                        period={period}
                     />
                 );
             })}
@@ -355,13 +357,15 @@ function TrendsView({ data, period, onChangePeriod }: {
 
 // ─── TREND CARD WITH SVG CHART ─────────────────────────────────
 
-function TrendCard({ label, unit, color, avgLabel, avgValue, data }: {
+function TrendCard({ label, unit, color, avgLabel, avgValue, data, dates, period }: {
     label: string;
     unit: string;
     color: string;
     avgLabel: string;
     avgValue: string;
     data: (number | null)[];
+    dates: string[];
+    period: number;
 }) {
     // Filter out nulls for chart rendering
     const validPoints = data.map((v, i) => v != null ? { x: i, y: v } : null).filter(Boolean) as { x: number; y: number }[];
@@ -422,14 +426,30 @@ function TrendCard({ label, unit, color, avgLabel, avgValue, data }: {
                 <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill={color} />
             </svg>
 
-            {/* Min/Max labels */}
-            <div className="flex justify-between mt-1">
-                <span className="text-[9px] text-muted-foreground/30 font-bold">
-                    {unit === "hrs" ? `${minY}h` : `${Math.round(minY)}${unit}`}
-                </span>
-                <span className="text-[9px] text-muted-foreground/30 font-bold">
-                    {unit === "hrs" ? `${maxY}h` : `${Math.round(maxY)}${unit}`}
-                </span>
+            {/* Date labels */}
+            <div className="flex justify-between mt-2">
+                {(() => {
+                    // Pick evenly spaced label indices
+                    const labelCount = period <= 7 ? dates.length : period <= 28 ? 5 : 6;
+                    const step = Math.max(1, Math.floor((dates.length - 1) / (labelCount - 1)));
+                    const indices = Array.from({ length: labelCount }, (_, i) =>
+                        Math.min(i * step, dates.length - 1)
+                    );
+                    // Deduplicate last index
+                    const uniqueIndices = [...new Set(indices)];
+
+                    return uniqueIndices.map(idx => {
+                        const d = new Date(dates[idx]);
+                        const lbl = period <= 7
+                            ? d.toLocaleDateString("en-US", { weekday: "short" })
+                            : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                        return (
+                            <span key={idx} className="text-[8px] text-muted-foreground/40 font-bold">
+                                {lbl}
+                            </span>
+                        );
+                    });
+                })()}
             </div>
         </motion.div>
     );
