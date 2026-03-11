@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, Fingerprint, Activity, Crown } from "lucide-react";
+import { ChevronRight, LogOut, Bell, Moon, HeartPulse, Shield, Smartphone, Fingerprint, Activity, Crown, Loader2, Check } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
@@ -25,6 +25,9 @@ export default function ProfileClient() {
     const [pillarStreaks, setPillarStreaks] = useState({ nutrition: 0, habits: 0, fitness: 0 });
     const [showProgress, setShowProgress] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
+    const [whoopConnected, setWhoopConnected] = useState(false);
+    const [whoopSyncing, setWhoopSyncing] = useState(false);
+    const [whoopLastSync, setWhoopLastSync] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
 
@@ -122,6 +125,20 @@ export default function ProfileClient() {
                     }
                 }
                 setPillarStreaks(prev => ({ ...prev, fitness: bestFitnessStreak }));
+            }
+
+            // Check Whoop connection status
+            const { data: whoopToken } = await supabase
+                .from("whoop_tokens")
+                .select("id, updated_at")
+                .eq("user_id", user.id)
+                .single();
+
+            if (whoopToken) {
+                setWhoopConnected(true);
+                if (whoopToken.updated_at) {
+                    setWhoopLastSync(new Date(whoopToken.updated_at).toLocaleTimeString());
+                }
             }
 
             setIsLoading(false);
@@ -259,12 +276,76 @@ export default function ProfileClient() {
                             </div>
                         </div>
 
+                        {/* Whoop Integration */}
+                        <div className="space-y-4 pt-4">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Connected Devices</h3>
+                            <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
+                                {whoopConnected ? (
+                                    <div className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-brand-emerald/10 flex items-center justify-center">
+                                                    <HeartPulse className="w-4 h-4 text-brand-emerald" />
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium text-foreground/90 block">Whoop</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-emerald" />
+                                                        <span className="text-[10px] text-brand-emerald font-bold">Connected</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Check className="w-5 h-5 text-brand-emerald" />
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                setWhoopSyncing(true);
+                                                try {
+                                                    const res = await fetch('/api/whoop/sync', { method: 'POST' });
+                                                    if (res.ok) {
+                                                        setWhoopLastSync(new Date().toLocaleTimeString());
+                                                    }
+                                                } catch (e) {
+                                                    console.error('Whoop sync failed:', e);
+                                                } finally {
+                                                    setWhoopSyncing(false);
+                                                }
+                                            }}
+                                            disabled={whoopSyncing}
+                                            className="w-full p-2.5 bg-brand-emerald/10 border border-brand-emerald/20 rounded-xl text-sm font-bold text-brand-emerald flex items-center justify-center gap-2 hover:bg-brand-emerald/20 transition-all active:scale-95 disabled:opacity-50"
+                                        >
+                                            {whoopSyncing ? (
+                                                <><Loader2 className="w-4 h-4 animate-spin" /> Syncing...</>
+                                            ) : (
+                                                <>Sync Now{whoopLastSync && <span className="text-[10px] font-normal text-muted-foreground ml-1">Last: {whoopLastSync}</span>}</>
+                                            )}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => window.location.href = '/api/whoop/auth'}
+                                        className="w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors active:bg-white/5 group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                                                <HeartPulse className="w-4 h-4 text-muted-foreground group-hover:text-brand-emerald transition-colors" />
+                                            </div>
+                                            <div className="text-left">
+                                                <span className="font-medium text-foreground/90 block">Connect Whoop</span>
+                                                <span className="text-[10px] text-muted-foreground">Sync workouts, recovery & sleep</span>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-white/20" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Settings List */}
                         <div className="space-y-4 pt-4">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Settings (Placeholder)</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Settings</h3>
                             <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden divide-y divide-white/5">
                                 <SettingsRow icon={Bell} label="Push Notifications" value="On" />
-                                <SettingsRow icon={HeartPulse} label="Apple Health Sync" value="Connected" />
                                 <SettingsRow icon={Moon} label="App Theme" value="Dark" />
                                 <SettingsRow icon={Shield} label="Privacy & Data" />
                                 <SettingsRow icon={Smartphone} label="App Version" value="Beta v1.01" />

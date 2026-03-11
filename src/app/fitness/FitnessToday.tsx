@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
 import { ACTIVITIES } from "@/utils/METs";
 import LogWorkoutModal from "./LogWorkoutModal";
+import { WhoopRecoveryCard } from "@/components/ui/WhoopRecoveryCard";
 
 export interface Workout {
     id: string;
@@ -14,12 +15,22 @@ export interface Workout {
     duration_minutes: number;
     calories_burned: number;
     created_at: string;
+    source?: string;
+}
+
+interface WhoopRecovery {
+    recovery_score: number | null;
+    hrv: number | null;
+    resting_heart_rate: number | null;
+    sleep_performance: number | null;
+    strain: number | null;
 }
 
 export default function FitnessToday() {
     const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [whoopRecovery, setWhoopRecovery] = useState<WhoopRecovery | null>(null);
     useEffect(() => {
         const fetchWorkouts = async () => {
             try {
@@ -49,7 +60,34 @@ export default function FitnessToday() {
             }
         };
 
+        const fetchWhoopRecovery = async () => {
+            try {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const now = new Date();
+                const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+                    .toISOString()
+                    .split("T")[0];
+
+                const { data } = await supabase
+                    .from("whoop_daily")
+                    .select("recovery_score, hrv, resting_heart_rate, sleep_performance, strain")
+                    .eq("user_id", user.id)
+                    .eq("date", todayStr)
+                    .single();
+
+                if (data) {
+                    setWhoopRecovery(data);
+                }
+            } catch {
+                // Silently fail — Whoop data is optional
+            }
+        };
+
         fetchWorkouts();
+        fetchWhoopRecovery();
     }, []);
 
     const handleDeleteWorkout = async (id: string) => {
@@ -84,6 +122,18 @@ export default function FitnessToday() {
                     </div>
                 </div>
             </div>
+
+            {/* Whoop Recovery Card */}
+            {whoopRecovery && (
+                <WhoopRecoveryCard
+                    recoveryScore={whoopRecovery.recovery_score}
+                    hrv={whoopRecovery.hrv}
+                    restingHR={whoopRecovery.resting_heart_rate}
+                    sleepPerformance={whoopRecovery.sleep_performance}
+                    strain={whoopRecovery.strain}
+                />
+            )}
+
             {/* Logged Workouts List */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
