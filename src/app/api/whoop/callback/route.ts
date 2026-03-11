@@ -19,15 +19,15 @@ export async function GET(req: NextRequest) {
         }
 
         if (!code || !state) {
-            return NextResponse.redirect(new URL("/profile?whoop=error", req.url));
+            return NextResponse.redirect(new URL("/profile?whoop=error&reason=missing_code_or_state", req.url));
         }
 
         // Verify CSRF state
         const cookieStore = await cookies();
         const storedState = cookieStore.get("whoop_oauth_state")?.value;
         if (state !== storedState) {
-            console.error("Whoop OAuth state mismatch");
-            return NextResponse.redirect(new URL("/profile?whoop=error", req.url));
+            console.error("Whoop OAuth state mismatch", { state, storedState });
+            return NextResponse.redirect(new URL(`/profile?whoop=error&reason=state_mismatch&s=${state}&c=${storedState}`, req.url));
         }
         cookieStore.delete("whoop_oauth_state");
 
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         if (!tokenRes.ok) {
             const errText = await tokenRes.text();
             console.error("Whoop token exchange failed:", tokenRes.status, errText);
-            return NextResponse.redirect(new URL("/profile?whoop=error", req.url));
+            return NextResponse.redirect(new URL(`/profile?whoop=error&reason=exchange_failed&status=${tokenRes.status}`, req.url));
         }
 
         const tokenData = await tokenRes.json();
@@ -93,12 +93,13 @@ export async function GET(req: NextRequest) {
 
         if (dbError) {
             console.error("Failed to store Whoop tokens:", dbError);
-            return NextResponse.redirect(new URL("/profile?whoop=error", req.url));
+            return NextResponse.redirect(new URL(`/profile?whoop=error&reason=db_error&details=${encodeURIComponent(dbError.message)}`, req.url));
         }
 
         return NextResponse.redirect(new URL("/profile?whoop=connected", req.url));
     } catch (error) {
         console.error("Whoop callback error:", error);
-        return NextResponse.redirect(new URL("/profile?whoop=error", req.url));
+        const errMessage = error instanceof Error ? error.message : "unknown";
+        return NextResponse.redirect(new URL(`/profile?whoop=error&reason=catch_block&details=${encodeURIComponent(errMessage)}`, req.url));
     }
 }
