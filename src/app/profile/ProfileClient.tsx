@@ -307,8 +307,6 @@ export default function ProfileClient() {
                                                         setWhoopLastSync(new Date().toLocaleTimeString());
                                                         if (logData.workout_error || logData.recovery_error) {
                                                             alert(`Sync finished but had errors: ${JSON.stringify(logData)}`);
-                                                        } else if (logData.workouts_synced === 0 && !logData.recovery_synced) {
-                                                            alert(`Sync succeeded, but no data was returned from Whoop: ${JSON.stringify(logData)}`);
                                                         }
                                                     } else {
                                                         alert(`Sync failed: ${JSON.stringify(logData)}`);
