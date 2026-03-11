@@ -80,6 +80,8 @@ export async function POST() {
             workouts_synced: 0,
             recovery_synced: false,
             sleep_synced: false,
+            workout_error: null as string | null,
+            recovery_error: null as string | null,
         };
 
         // ─── Fetch recent workouts (last 7 days) ──────────────
@@ -117,6 +119,7 @@ export async function POST() {
             }
         } catch (e) {
             console.error("Failed to sync Whoop workouts:", e);
+            results.workout_error = e instanceof Error ? e.message : String(e);
         }
 
         // ─── Fetch today's recovery ──────────────────────────
@@ -180,6 +183,7 @@ export async function POST() {
             }
         } catch (e) {
             console.error("Failed to sync Whoop recovery:", e);
+            results.recovery_error = e instanceof Error ? e.message : String(e);
         }
 
         return NextResponse.json({
