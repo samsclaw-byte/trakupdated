@@ -132,7 +132,7 @@ export default function ProfileClient() {
                 .from("whoop_tokens")
                 .select("id, updated_at")
                 .eq("user_id", user.id)
-                .single();
+                .maybeSingle();
 
             if (whoopToken) {
                 setWhoopConnected(true);

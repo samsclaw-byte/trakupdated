@@ -12,6 +12,7 @@ import { WeeklyReviewOverlay } from "@/components/ui/WeeklyReviewOverlay";
 import { HubHeroCard, HeroCardType } from "@/components/hub/HubHeroCard";
 import { HubVitalSigns } from "@/components/hub/HubVitalSigns";
 import { HubActionDeck, ActionCard } from "@/components/hub/HubActionDeck";
+import { BottomTabBar } from "@/components/ui/BottomTabBar";
 
 export default function HubClient() {
     const router = useRouter();
@@ -53,7 +54,7 @@ export default function HubClient() {
             setProfile(userProfile);
 
             // 2. Whoop Data
-            const { data: whoopTokens } = await supabase.from('whoop_tokens').select('updated_at').eq('user_id', user.id).single();
+            const { data: whoopTokens } = await supabase.from('whoop_tokens').select('id').eq('user_id', user.id).maybeSingle();
             setWhoopConnected(!!whoopTokens);
 
             const { data: dailyWhoop } = await supabase
@@ -81,8 +82,8 @@ export default function HubClient() {
             setFitness(todayWorkouts || []);
 
             // 5. Habits (Fetch active habits and today's logs)
-            const { data: myHabits } = await supabase.from('habits').select('id').eq('user_id', user.id).eq('is_archived', false);
-            const { data: habitLogs } = await supabase.from('habit_logs').select('habit_id').eq('user_id', user.id).eq('completed_date', todayLocalISO);
+            const { data: myHabits } = await supabase.from('habit_definitions').select('id').eq('user_id', user.id).eq('is_active', true);
+            const { data: habitLogs } = await supabase.from('habit_logs').select('habit_id').eq('user_id', user.id).eq('date', todayLocalISO).eq('completed', true);
             setHabitsStats({
                 completed: habitLogs?.length || 0,
                 total: myHabits?.length || 0
@@ -237,6 +238,8 @@ export default function HubClient() {
                     <HubActionDeck cards={actionCards} />
                 </div>
             </div>
+
+            <BottomTabBar />
         </div>
     );
 }
