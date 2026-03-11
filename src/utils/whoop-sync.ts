@@ -19,6 +19,17 @@ interface WhoopWorkout {
         max_heart_rate: number;
         kilojoule: number;
         distance_meter?: number;
+        altitude_gain_meter?: number;
+        altitude_change_meter?: number;
+        percent_recorded?: number;
+        zone_duration?: {
+            zone_zero_milli?: number;
+            zone_one_milli?: number;
+            zone_two_milli?: number;
+            zone_three_milli?: number;
+            zone_four_milli?: number;
+            zone_five_milli?: number;
+        };
     } | null;
 }
 
@@ -156,6 +167,15 @@ export async function syncWhoopData(
                     date: dateStr,
                     source: "whoop",
                     external_id: `whoop_${w.id}`,
+                    raw_data: {
+                        sport_id: w.sport_id,
+                        strain: w.score.strain,
+                        average_heart_rate: w.score.average_heart_rate,
+                        max_heart_rate: w.score.max_heart_rate,
+                        distance_meter: w.score.distance_meter ?? null,
+                        altitude_gain_meter: w.score.altitude_gain_meter ?? null,
+                        zone_duration: w.score.zone_duration ?? null,
+                    },
                 }, { onConflict: "external_id" });
 
             if (!wErr) results.workouts_synced++;

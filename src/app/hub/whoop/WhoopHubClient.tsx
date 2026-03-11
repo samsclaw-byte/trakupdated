@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { ChevronLeft, Zap, HeartPulse, Moon, Activity, Droplets, Thermometer, TrendingUp, Calendar } from "lucide-react";
+import { ChevronLeft, Zap, HeartPulse, Moon, Activity, Droplets, Thermometer, TrendingUp, Calendar, Dumbbell, Flame, Heart } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,6 +18,8 @@ export default function WhoopHubClient() {
     const [selectedDayIdx, setSelectedDayIdx] = useState(0);
     const [trendPeriod, setTrendPeriod] = useState<7 | 28 | 90>(28);
     const [isSyncing, setIsSyncing] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [workouts, setWorkouts] = useState<any[]>([]);
     const supabase = createClient();
 
     useEffect(() => {
@@ -35,6 +37,18 @@ export default function WhoopHubClient() {
             if (data && data.length > 0) {
                 setAllData(data);
             }
+
+            // Also fetch Whoop workouts
+            const { data: wData } = await supabase
+                .from("workouts")
+                .select("*")
+                .eq("user_id", user.id)
+                .eq("source", "whoop")
+                .order("date", { ascending: false })
+                .limit(200);
+
+            if (wData) setWorkouts(wData);
+
             setIsLoading(false);
         };
         fetchData();
@@ -147,6 +161,7 @@ export default function WhoopHubClient() {
                         data={trendData}
                         period={trendPeriod}
                         onChangePeriod={setTrendPeriod}
+                        workouts={workouts}
                     />
                 )}
             </AnimatePresence>
@@ -265,10 +280,12 @@ function TodayView({ data, selectedIdx, onSelectDay, selectedDay }: {
 
 // ─── TRENDS VIEW ────────────────────────────────────────────────
 
-function TrendsView({ data, period, onChangePeriod }: {
+function TrendsView({ data, period, onChangePeriod, workouts }: {
     data: DailyData[];
     period: 7 | 28 | 90;
     onChangePeriod: (p: 7 | 28 | 90) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    workouts: any[];
 }) {
     const periods: (7 | 28 | 90)[] = [7, 28, 90];
     const periodLabels: Record<number, string> = { 7: "7 Days", 28: "28 Days", 90: "90 Days" };
@@ -279,6 +296,10 @@ function TrendsView({ data, period, onChangePeriod }: {
         return valid.reduce((sum: number, d: DailyData) => sum + d[key], 0) / valid.length;
     };
 
+    // Filter workouts for the selected period using the data range
+    const oldestDataDate = data.length > 0 ? data[data.length - 1]?.date : "";
+    const periodWorkouts = workouts.filter(w => w.date >= oldestDataDate);
+
     const trendConfigs = [
         { key: "recovery_score", label: "Recovery", unit: "%", color: "#34d399", avgLabel: "Avg Recovery" },
         { key: "hrv", label: "HRV", unit: "ms", color: "#a78bfa", avgLabel: "Avg HRV" },
@@ -286,6 +307,13 @@ function TrendsView({ data, period, onChangePeriod }: {
         { key: "sleep_duration_minutes", label: "Sleep", unit: "hrs", color: "#818cf8", avgLabel: "Avg Sleep", transform: (v: number) => +(v / 60).toFixed(1) },
         { key: "strain", label: "Day Strain", unit: "", color: "#fbbf24", avgLabel: "Avg Strain" },
     ];
+
+    // Build workout frequency per day for trend chart
+    const workoutsByDate = new Map<string, number>();
+    for (const w of periodWorkouts) {
+        workoutsByDate.set(w.date, (workoutsByDate.get(w.date) || 0) + 1);
+    }
+    const workoutFreqData = data.map((d: DailyData) => workoutsByDate.get(d.date) || 0);
 
     return (
         <motion.div
@@ -313,7 +341,7 @@ function TrendsView({ data, period, onChangePeriod }: {
                 {[
                     { label: "Recovery", val: avg("recovery_score"), fmt: (v: number) => `${Math.round(v)}%`, color: "text-emerald-400" },
                     { label: "HRV", val: avg("hrv"), fmt: (v: number) => `${Math.round(v)}ms`, color: "text-purple-400" },
-                    { label: "Sleep", val: avg("sleep_duration_minutes"), fmt: (v: number) => `${(v / 60).toFixed(1)}h`, color: "text-indigo-400" },
+                    { label: "Workouts", val: periodWorkouts.length, fmt: (v: number) => `${v}`, color: "text-rose-400" },
                 ].map(stat => (
                     <div key={stat.label} className="bg-white/5 border border-white/5 rounded-2xl p-3 text-center">
                         <span className={`text-lg font-black ${stat.color}`}>
@@ -351,12 +379,37 @@ function TrendsView({ data, period, onChangePeriod }: {
                     />
                 );
             })}
+
+            {/* Workout Frequency Trend */}
+            <TrendCard
+                label="Workouts"
+                unit=""
+                color="#fb7185"
+                avgLabel="Total"
+                avgValue={`${periodWorkouts.length}`}
+                data={workoutFreqData}
+                dates={data.map((d: DailyData) => d.date)}
+                period={period}
+            />
+
+            {/* ─── Recent Workouts ────────────────────────────── */}
+            {periodWorkouts.length > 0 && (
+                <div className="space-y-4 pt-2">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">
+                        Recent Workouts
+                    </h3>
+                    {periodWorkouts.slice(0, 10).map((w: DailyData, idx: number) => (
+                        <WorkoutCard key={w.id || idx} workout={w} />
+                    ))}
+                </div>
+            )}
         </motion.div>
     );
 }
 
 // ─── TREND CARD WITH SVG CHART ─────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function TrendCard({ label, unit, color, avgLabel, avgValue, data, dates, period }: {
     label: string;
     unit: string;
@@ -451,6 +504,118 @@ function TrendCard({ label, unit, color, avgLabel, avgValue, data, dates, period
                     });
                 })()}
             </div>
+        </motion.div>
+    );
+}
+
+// ─── WORKOUT CARD ──────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function WorkoutCard({ workout }: { workout: any }) {
+    const raw = workout.raw_data || {};
+    const zones = raw.zone_duration || {};
+    const hasZones = zones.zone_one_milli || zones.zone_two_milli || zones.zone_three_milli || zones.zone_four_milli || zones.zone_five_milli;
+
+    // Calculate total zone time for percentage bar
+    const zoneTimes = [
+        { label: "Z1", milli: zones.zone_one_milli || 0, color: "#94a3b8" },   // gray
+        { label: "Z2", milli: zones.zone_two_milli || 0, color: "#60a5fa" },    // blue
+        { label: "Z3", milli: zones.zone_three_milli || 0, color: "#4ade80" },  // green
+        { label: "Z4", milli: zones.zone_four_milli || 0, color: "#fb923c" },   // orange
+        { label: "Z5", milli: zones.zone_five_milli || 0, color: "#f43f5e" },   // red
+    ];
+    const totalZoneMilli = zoneTimes.reduce((s, z) => s + z.milli, 0) || 1;
+
+    const dateStr = new Date(workout.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white/5 border border-white/5 rounded-3xl p-5 space-y-4"
+        >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-rose-400/10 flex items-center justify-center">
+                        <Dumbbell className="w-5 h-5 text-rose-400" />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold capitalize">{workout.activity_type}</h4>
+                        <span className="text-[10px] text-muted-foreground/60 font-semibold">{dateStr}</span>
+                    </div>
+                </div>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${workout.intensity === "high" ? "bg-red-400/10 text-red-400" :
+                    workout.intensity === "moderate" ? "bg-amber-400/10 text-amber-400" :
+                        "bg-emerald-400/10 text-emerald-400"
+                    }`}>
+                    {workout.intensity}
+                </span>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-4 gap-2">
+                <div className="text-center">
+                    <span className="text-sm font-bold block">{workout.duration_minutes}m</span>
+                    <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50 font-bold">Duration</span>
+                </div>
+                <div className="text-center">
+                    <span className="text-sm font-bold block text-amber-400">{workout.calories_burned}</span>
+                    <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50 font-bold">Calories</span>
+                </div>
+                <div className="text-center">
+                    <span className="text-sm font-bold block text-rose-400">{raw.strain ? raw.strain.toFixed(1) : "--"}</span>
+                    <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50 font-bold">Strain</span>
+                </div>
+                <div className="text-center">
+                    <span className="text-sm font-bold block">
+                        <Heart className="w-3 h-3 inline text-red-400 mr-0.5" />{raw.average_heart_rate || "--"}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50 font-bold">Avg HR</span>
+                </div>
+            </div>
+
+            {/* HR Zone Breakdown */}
+            {hasZones && (
+                <div className="space-y-2">
+                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-bold">HR Zones</span>
+                    {/* Zone Bar */}
+                    <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                        {zoneTimes.map(z => {
+                            const pct = (z.milli / totalZoneMilli) * 100;
+                            if (pct < 1) return null;
+                            return (
+                                <div
+                                    key={z.label}
+                                    style={{ width: `${pct}%`, backgroundColor: z.color }}
+                                    className="h-full first:rounded-l-full last:rounded-r-full transition-all"
+                                />
+                            );
+                        })}
+                    </div>
+                    {/* Zone Labels */}
+                    <div className="flex justify-between">
+                        {zoneTimes.map(z => {
+                            const mins = Math.round(z.milli / 60000);
+                            if (mins < 1) return <span key={z.label} />;
+                            return (
+                                <div key={z.label} className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold" style={{ color: z.color }}>{z.label}</span>
+                                    <span className="text-[8px] text-muted-foreground/40 font-bold">{mins}m</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Max HR & Distance */}
+            {(raw.max_heart_rate || raw.distance_meter) && (
+                <div className="flex gap-4 text-[10px] text-muted-foreground/50 font-bold pt-1 border-t border-white/5">
+                    {raw.max_heart_rate && <span>Max HR: <span className="text-white">{raw.max_heart_rate} bpm</span></span>}
+                    {raw.distance_meter && <span>Distance: <span className="text-white">{(raw.distance_meter / 1000).toFixed(2)} km</span></span>}
+                </div>
+            )}
         </motion.div>
     );
 }
