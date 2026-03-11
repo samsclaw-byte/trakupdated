@@ -88,7 +88,7 @@ export async function POST() {
         try {
             const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
             const workoutData = await fetchWhoopAPI(
-                `/v1/activity/workout?start=${sevenDaysAgo}&limit=25`,
+                `/v2/activity/workout?start=${sevenDaysAgo}&limit=25`,
                 tokens,
                 supabase,
                 user.id
@@ -126,7 +126,7 @@ export async function POST() {
         try {
             const today = new Date().toISOString().split("T")[0];
             const cycleData = await fetchWhoopAPI(
-                `/v1/cycle?start=${today}T00:00:00.000Z&limit=1`,
+                `/v2/cycle?start=${today}T00:00:00.000Z&limit=1`,
                 tokens,
                 supabase,
                 user.id
@@ -137,7 +137,7 @@ export async function POST() {
 
                 // Get recovery for this cycle
                 const recoveryData = await fetchWhoopAPI(
-                    `/v1/recovery?start=${today}T00:00:00.000Z&limit=1`,
+                    `/v2/recovery?start=${today}T00:00:00.000Z&limit=1`,
                     tokens,
                     supabase,
                     user.id
@@ -145,7 +145,7 @@ export async function POST() {
 
                 // Get sleep for today
                 const sleepData = await fetchWhoopAPI(
-                    `/v1/activity/sleep?start=${today}T00:00:00.000Z&limit=1`,
+                    `/v2/activity/sleep?start=${today}T00:00:00.000Z&limit=1`,
                     tokens,
                     supabase,
                     user.id
