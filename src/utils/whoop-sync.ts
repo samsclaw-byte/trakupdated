@@ -147,6 +147,8 @@ export async function syncWhoopData(
             tokens, supabase, userId
         );
 
+        console.log(`[Whoop Sync] Fetched ${workouts.length} workouts from Whoop API`);
+
         for (const w of workouts) {
             if (w.score_state !== "SCORED" || !w.score) continue;
 
@@ -178,7 +180,14 @@ export async function syncWhoopData(
                     },
                 }, { onConflict: "external_id" });
 
-            if (!wErr) results.workouts_synced++;
+            if (wErr) {
+                console.error(`[Whoop Sync] Workout upsert error:`, wErr.message);
+                if (!results.workout_error) {
+                    results.workout_error = `DB upsert failed: ${wErr.message}`;
+                }
+            } else {
+                results.workouts_synced++;
+            }
         }
     } catch (e) {
         console.error("Failed to sync Whoop workouts:", e);
