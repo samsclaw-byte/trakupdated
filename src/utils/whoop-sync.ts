@@ -12,6 +12,7 @@ interface WhoopWorkout {
     start: string;
     end: string;
     sport_id: number;
+    sport_name?: string;
     score_state: string;
     score: {
         strain: number;
@@ -171,7 +172,7 @@ export async function syncWhoopData(
                 .from("workouts")
                 .insert({
                     user_id: userId,
-                    activity_type: mapWhoopSport(w.sport_id),
+                    activity_type: w.sport_name || mapWhoopSport(w.sport_id),
                     intensity: w.score.strain > 14 ? "high" : w.score.strain > 8 ? "moderate" : "light",
                     duration_minutes: durationMinutes,
                     calories_burned: caloriesBurned,
@@ -180,6 +181,7 @@ export async function syncWhoopData(
                     external_id: externalId,
                     raw_data: {
                         sport_id: w.sport_id,
+                        sport_name: w.sport_name || mapWhoopSport(w.sport_id),
                         strain: w.score.strain,
                         average_heart_rate: w.score.average_heart_rate,
                         max_heart_rate: w.score.max_heart_rate,

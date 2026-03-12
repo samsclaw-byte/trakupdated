@@ -79,10 +79,12 @@ export function SubViewToggle({ views, defaultView }: SubViewToggleProps) {
                         exit={{ x: direction > 0 ? -100 : 100, opacity: 0 }}
                         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                         drag="x"
+                        dragDirectionLock
                         dragConstraints={{ left: 0, right: 0 }}
                         dragElastic={0.15}
                         onDragEnd={handleDragEnd}
-                        className="flex-1 min-h-0 overflow-y-auto"
+                        className="flex-1 min-h-0 overflow-y-auto px-6 py-4"
+                        style={{ touchAction: "pan-y" }}
                     >
                         {activeView?.content}
                     </motion.div>
