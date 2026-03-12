@@ -3,8 +3,8 @@ import { RecapData } from "@/components/hub/DailyRecapOverlay";
 
 /**
  * Calculate all recap data for the Daily Recap overlay.
- * This gathers yesterday's meals, workouts, habits, whoop data,
- * and profile card points.
+ * Gathers yesterday's meals, workouts, habits, whoop data,
+ * streak calculations (current + best), and profile badge info.
  */
 export async function calculateRecapData(
     supabase: SupabaseClient,
@@ -19,21 +19,28 @@ export async function calculateRecapData(
         yesterday.setDate(today.getDate() - 1);
         const yesterdayStr = new Date(yesterday.getTime() - (yesterday.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
 
-        // Format yesterday's date nicely
         const yesterdayDate = yesterday.toLocaleDateString("en-US", {
             weekday: "long",
             month: "short",
             day: "numeric",
         });
 
-        // --- 1. Profile (BMR) ---
+        // --- 1. Profile ---
         const { data: profile } = await supabase
             .from("users")
-            .select("bmr, daily_calories, weight")
+            .select("bmr, daily_calories, weight, name, created_at, member_number, is_trak_plus")
             .eq("id", userId)
             .single();
 
         const bmr = profile?.bmr || profile?.daily_calories || 2000;
+        const fullName = profile?.name || userName;
+        const nameParts = fullName.split(" ");
+        const userInitials = nameParts.map((n: string) => n[0]).join("").toUpperCase().substring(0, 2);
+        const sinceDate = profile?.created_at
+            ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+            : "2026";
+        const memberNumber = profile?.member_number || "0001";
+        const isTrakPlus = !!profile?.is_trak_plus;
 
         // --- 2. Yesterday's Meals ---
         const startOfYesterday = yesterday.toISOString();
@@ -90,39 +97,7 @@ export async function calculateRecapData(
         const habitsTotal = habits.length;
         const habitsAchieved = habitsTotal > 0 && habitsCompleted === habitsTotal;
 
-        // Habit streak
-        const { data: streakData } = await supabase
-            .from("habit_streaks")
-            .select("current_streak")
-            .eq("user_id", userId)
-            .eq("habit_id", "perfect_days")
-            .limit(1);
-        const habitStreak = streakData?.[0]?.current_streak || 0;
-
-        // --- 5. Fitness streak ---
-        const { data: allWorkoutDates } = await supabase
-            .from("workouts")
-            .select("date")
-            .eq("user_id", userId)
-            .order("date", { ascending: false })
-            .limit(100);
-
-        let fitnessStreak = 0;
-        if (allWorkoutDates && allWorkoutDates.length > 0) {
-            const uniqueDates = [...new Set(allWorkoutDates.map(w => w.date))];
-            const checkDate = new Date(yesterday.getTime() - (yesterday.getTimezoneOffset() * 60000));
-            while (true) {
-                const dStr = checkDate.toISOString().split("T")[0];
-                if (uniqueDates.includes(dStr)) {
-                    fitnessStreak++;
-                    checkDate.setDate(checkDate.getDate() - 1);
-                } else {
-                    break;
-                }
-            }
-        }
-
-        // --- 6. Whoop Data (yesterday) ---
+        // --- 5. Whoop Data ---
         const { data: whoopDaily } = await supabase
             .from("whoop_daily")
             .select("recovery_score, strain, hrv, sleep_duration_minutes, sleep_performance")
@@ -130,31 +105,26 @@ export async function calculateRecapData(
             .eq("date", yesterdayStr)
             .maybeSingle();
 
-        // --- 7. Points calculation ---
+        // --- 6. Streak Calculations ---
         const totalBudget = bmr + totalWorkoutCalories;
         const nutritionAchieved = hasMeals && totalEaten <= totalBudget;
         const fitnessAchieved = workouts.length > 0;
 
-        // Fetch current profile card points (from squad_feed counts or a dedicated field)
-        // For now, count historical pillar achievements
-        const { count: nutritionCount } = await supabase
-            .from("squad_feed")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("event_type", "calorie_target_hit");
-        const { count: fitnessCount } = await supabase
-            .from("squad_feed")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("event_type", "workout_completed");
-        const { count: habitsCount } = await supabase
-            .from("squad_feed")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("event_type", "habit_completed");
+        // Nutrition streak: consecutive days under calorie budget with meals logged
+        const nutritionStreaks = await calculatePillarStreak(supabase, userId, "calorie_target_hit", yesterdayStr, nutritionAchieved);
+
+        // Fitness streak: consecutive days with workouts
+        const fitnessStreaks = await calculatePillarStreak(supabase, userId, "workout_completed", yesterdayStr, fitnessAchieved);
+
+        // Habits streak = perfect days (all habits completed)
+        const habitsStreaks = await calculatePillarStreak(supabase, userId, "habit_completed", yesterdayStr, habitsAchieved);
 
         return {
-            userName,
+            userName: nameParts[0] || userName,
+            userInitials,
+            sinceDate,
+            memberNumber,
+            isTrakPlus,
             yesterdayDate,
             bmr,
             workouts,
@@ -163,12 +133,12 @@ export async function calculateRecapData(
             meals,
             nutritionAchieved,
             fitnessAchieved,
-            fitnessStreak,
+            fitnessStreak: fitnessStreaks.current,
             habits,
             habitsCompleted,
             habitsTotal,
             habitsAchieved,
-            habitStreak,
+            habitStreak: habitsStreaks.current,
             whoopData: whoopDaily ? {
                 recovery_score: whoopDaily.recovery_score,
                 strain: whoopDaily.strain,
@@ -176,10 +146,10 @@ export async function calculateRecapData(
                 sleep_duration_minutes: whoopDaily.sleep_duration_minutes,
                 sleep_performance: whoopDaily.sleep_performance,
             } : undefined,
-            currentPoints: {
-                nutrition: nutritionCount || 0,
-                fitness: fitnessCount || 0,
-                habits: habitsCount || 0,
+            streaks: {
+                nutrition: nutritionStreaks,
+                fitness: fitnessStreaks,
+                habits: habitsStreaks,
             },
             pointsEarned: {
                 nutrition: nutritionAchieved ? 1 : 0,
@@ -190,5 +160,78 @@ export async function calculateRecapData(
     } catch (e) {
         console.error("Error calculating recap data:", e);
         return null;
+    }
+}
+
+/**
+ * Calculate current and best streak for a pillar based on squad_feed events.
+ */
+async function calculatePillarStreak(
+    supabase: SupabaseClient,
+    userId: string,
+    eventType: string,
+    yesterdayStr: string,
+    achievedYesterday: boolean
+): Promise<{ current: number; best: number }> {
+    try {
+        // Get all dates this event was achieved, ordered newest first
+        const { data: events } = await supabase
+            .from("squad_feed")
+            .select("created_at")
+            .eq("user_id", userId)
+            .eq("event_type", eventType)
+            .order("created_at", { ascending: false })
+            .limit(365);
+
+        if (!events || events.length === 0) {
+            return { current: achievedYesterday ? 1 : 0, best: achievedYesterday ? 1 : 0 };
+        }
+
+        // Get unique dates
+        const dates = [...new Set(events.map(e => {
+            const d = new Date(e.created_at);
+            return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+        }))].sort().reverse();
+
+        // Current streak: count consecutive days from yesterday backward
+        let currentStreak = 0;
+        const checkDate = new Date(yesterdayStr + "T12:00:00Z");
+
+        // If achieved yesterday, include it
+        if (achievedYesterday) {
+            currentStreak = 1;
+            checkDate.setDate(checkDate.getDate() - 1);
+        }
+
+        while (true) {
+            const dStr = checkDate.toISOString().split("T")[0];
+            if (dates.includes(dStr)) {
+                currentStreak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        // Best streak: iterate through all dates
+        let bestStreak = currentStreak;
+        if (dates.length > 1) {
+            let streak = 1;
+            for (let i = 1; i < dates.length; i++) {
+                const prev = new Date(dates[i - 1] + "T12:00:00Z");
+                const curr = new Date(dates[i] + "T12:00:00Z");
+                const diff = Math.round((prev.getTime() - curr.getTime()) / (1000 * 3600 * 24));
+                if (diff === 1) {
+                    streak++;
+                    bestStreak = Math.max(bestStreak, streak);
+                } else {
+                    streak = 1;
+                }
+            }
+        }
+
+        return { current: currentStreak, best: Math.max(bestStreak, currentStreak) };
+    } catch {
+        return { current: 0, best: 0 };
     }
 }

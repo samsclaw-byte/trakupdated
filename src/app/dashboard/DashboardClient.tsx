@@ -290,23 +290,39 @@ export default function DashboardClient() {
                                 const timeStr = new Date(meal.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                                 return (
                                     <motion.div key={meal.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                                        className="flex items-center justify-between p-5 bg-white/5 border border-white/5 rounded-3xl group transition-all hover:bg-white/[0.08]">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-brand-emerald/10 transition-colors">
-                                                <MealIcon className="w-5 h-5 text-muted-foreground group-hover:text-brand-emerald transition-colors" />
+                                        className="p-4 bg-white/5 border border-white/5 rounded-3xl group transition-all hover:bg-white/[0.08]">
+                                        <div className="flex gap-3">
+                                            {/* Icon */}
+                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-brand-emerald/10 transition-colors">
+                                                <MealIcon className="w-4 h-4 text-muted-foreground group-hover:text-brand-emerald transition-colors" />
                                             </div>
-                                            <div>
-                                                <h4 className="font-semibold text-foreground/90 capitalize">
-                                                    {meal.text_entry.substring(0, 25)}{meal.text_entry.length > 25 ? '...' : ''}
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-semibold text-sm text-foreground/90 capitalize truncate">
+                                                    {meal.text_entry}
                                                 </h4>
-                                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                                                    P: {meal.protein || 0}g • F: {meal.fat || 0}g • FIBRE: {meal.fibre || 0}g
+                                                <p className="text-[10px] text-muted-foreground/60 mt-0.5 italic truncate">
+                                                    {meal.meal_type} · {timeStr}
                                                 </p>
+                                                <div className="flex gap-2 mt-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                                                    <span>P: {meal.protein || 0}g</span>
+                                                    <span>C: {meal.calories || 0}</span>
+                                                    <span>F: {meal.fat || 0}g</span>
+                                                    <span>Fi: {meal.fibre || 0}g</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="text-right flex-shrink-0 pl-4">
-                                            <span className="text-lg font-bold">+{meal.calories}</span>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter text-right">{timeStr}</p>
+                                            {/* Calories + actions stacked on right */}
+                                            <div className="flex flex-col items-end justify-between shrink-0">
+                                                <span className="text-lg font-black text-brand-emerald">+{meal.calories}</span>
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <button className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                                                        <Flame className="w-3 h-3 text-muted-foreground" />
+                                                    </button>
+                                                    <button className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 transition-colors">
+                                                        <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </motion.div>
                                 );

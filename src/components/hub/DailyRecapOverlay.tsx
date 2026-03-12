@@ -2,19 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { X, Apple, Dumbbell, CheckCircle2, Flame, ChevronRight } from "lucide-react";
+import { X, CheckCircle2, Flame, ChevronRight, Pencil } from "lucide-react";
+import Link from "next/link";
+import { ProfileBadgeCard } from "@/components/ui/ProfileBadgeCard";
 
 export interface RecapData {
     userName: string;
-    yesterdayDate: string; // formatted string like "Tuesday, Mar 11"
+    userInitials: string;
+    sinceDate: string;
+    memberNumber: string;
+    isTrakPlus: boolean;
+    yesterdayDate: string;
     // Nutrition
     bmr: number;
     workouts: { activity_type: string; calories_burned: number; duration_minutes: number }[];
     totalWorkoutCalories: number;
     totalEaten: number;
     meals: { meal_type: string; calories: number }[];
-    nutritionAchieved: boolean; // under budget AND at least 1 meal
+    nutritionAchieved: boolean;
     // Fitness
     fitnessAchieved: boolean;
     fitnessStreak: number;
@@ -22,7 +27,7 @@ export interface RecapData {
     habits: { name: string; completed: boolean }[];
     habitsCompleted: number;
     habitsTotal: number;
-    habitsAchieved: boolean; // all completed
+    habitsAchieved: boolean;
     habitStreak: number;
     // Whoop
     whoopData?: {
@@ -32,8 +37,13 @@ export interface RecapData {
         sleep_duration_minutes: number;
         sleep_performance: number;
     };
-    // Profile card
-    currentPoints: { nutrition: number; fitness: number; habits: number };
+    // Streaks (current / best)
+    streaks: {
+        nutrition: { current: number; best: number };
+        fitness: { current: number; best: number };
+        habits: { current: number; best: number }; // perfect days
+    };
+    // Points earned today
     pointsEarned: { nutrition: number; fitness: number; habits: number };
 }
 
@@ -59,7 +69,7 @@ export function DailyRecapOverlay({ data, onComplete }: DailyRecapOverlayProps) 
         }
     };
 
-    // Auto-advance for overview and habits (5 seconds)
+    // Auto-advance for overview and habits (30 seconds)
     useEffect(() => {
         if (step === "overview" || step === "habits") {
             timerRef.current = setTimeout(goNext, 30000);
@@ -118,7 +128,7 @@ export function DailyRecapOverlay({ data, onComplete }: DailyRecapOverlayProps) 
     );
 }
 
-// ─── STEP 1: OVERVIEW ───────────────────────────────────────────
+// ─── STEP 1: OVERVIEW (with edit links) ─────────────────────────
 
 function OverviewStep({ data, onNext }: { data: RecapData; onNext: () => void }) {
     return (
@@ -131,22 +141,35 @@ function OverviewStep({ data, onNext }: { data: RecapData; onNext: () => void })
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold mb-2">Yesterday&apos;s Report</p>
             <h2 className="text-2xl font-black tracking-tight text-white mb-8">{data.yesterdayDate}</h2>
 
-            <div className="w-full max-w-sm space-y-4 text-left">
-                <SummaryRow emoji="🍎" text={`${data.totalEaten.toLocaleString()} kcal eaten`} sub={`${data.meals.length} meals logged`} />
+            <div className="w-full max-w-sm space-y-3 text-left">
+                {/* Meals — editable */}
+                <SummaryRow
+                    emoji="🍎"
+                    text={`${data.totalEaten.toLocaleString()} kcal eaten`}
+                    sub={`${data.meals.length} meals logged`}
+                    editHref="/dashboard"
+                />
+
+                {/* Workouts — editable */}
                 {data.workouts.length > 0 ? (
                     <SummaryRow
                         emoji="🏋️"
                         text={`${data.workouts.length} workout${data.workouts.length > 1 ? "s" : ""} · ${data.totalWorkoutCalories} kcal burned`}
                         sub={data.workouts.map(w => `${w.activity_type} ${w.duration_minutes}min`).join(", ")}
+                        editHref="/fitness"
                     />
                 ) : (
-                    <SummaryRow emoji="🏋️" text="No workouts logged" sub="Rest day" muted />
+                    <SummaryRow emoji="🏋️" text="No workouts logged" sub="Rest day" muted editHref="/fitness" />
                 )}
+
+                {/* Habits */}
                 <SummaryRow
                     emoji="✅"
                     text={`${data.habitsCompleted}/${data.habitsTotal} habits completed`}
                     muted={data.habitsCompleted === 0}
                 />
+
+                {/* Whoop */}
                 {data.whoopData && (
                     <>
                         <SummaryRow emoji="💤" text={`${Math.floor(data.whoopData.sleep_duration_minutes / 60)}h ${data.whoopData.sleep_duration_minutes % 60}m sleep`} sub={`${data.whoopData.sleep_performance}% performance`} />
@@ -165,27 +188,27 @@ function OverviewStep({ data, onNext }: { data: RecapData; onNext: () => void })
     );
 }
 
-function SummaryRow({ emoji, text, sub, muted }: { emoji: string; text: string; sub?: string; muted?: boolean }) {
+function SummaryRow({ emoji, text, sub, muted, editHref }: { emoji: string; text: string; sub?: string; muted?: boolean; editHref?: string }) {
     return (
-        <div className={`flex items-start gap-3 py-2 ${muted ? "opacity-40" : ""}`}>
-            <span className="text-xl leading-none mt-0.5">{emoji}</span>
-            <div>
+        <div className={`flex items-center gap-3 py-2.5 px-3 rounded-2xl ${muted ? "opacity-40" : ""} ${editHref ? "hover:bg-white/5 transition-colors" : ""}`}>
+            <span className="text-xl leading-none shrink-0">{emoji}</span>
+            <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white">{text}</p>
                 {sub && <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>}
             </div>
+            {editHref && (
+                <Link href={editHref} className="shrink-0 p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                    <Pencil className="w-3 h-3 text-muted-foreground" />
+                </Link>
+            )}
         </div>
     );
 }
 
-// ─── STEP 2: CALORIE BUDGET (THE CENTERPIECE) ──────────────────
+// ─── STEP 2: CALORIE BUDGET — WATERFALL CHART ──────────────────
 
 function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => void }) {
     const [phase, setPhase] = useState(0);
-    // Phase 0: nothing
-    // Phase 1: BMR bar animates
-    // Phase 2: Workout bars animate
-    // Phase 3: Eaten bar animates
-    // Phase 4: Net result appears
 
     useEffect(() => {
         const timers = [
@@ -199,12 +222,33 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
 
     const totalBudget = data.bmr + data.totalWorkoutCalories;
     const net = totalBudget - data.totalEaten;
-    const maxVal = Math.max(totalBudget, data.totalEaten, data.bmr);
 
-    // Bar widths as percentages of the max value
+    // All bars are scaled against the LARGER of total budget or total eaten
+    const maxVal = Math.max(totalBudget, data.totalEaten);
+
+    // Cumulative positions for waterfall (immutable)
     const bmrWidth = (data.bmr / maxVal) * 100;
-    const workoutWidths = data.workouts.map(w => (w.calories_burned / maxVal) * 100);
+
+    const workoutSegments = data.workouts.reduce<{ segments: { activity_type: string; calories_burned: number; duration_minutes: number; startPct: number; widthPct: number }[]; cum: number }>(
+        (acc, w) => {
+            const start = (acc.cum / maxVal) * 100;
+            const width = (w.calories_burned / maxVal) * 100;
+            return {
+                segments: [...acc.segments, { ...w, startPct: start, widthPct: width }],
+                cum: acc.cum + w.calories_burned,
+            };
+        },
+        { segments: [], cum: data.bmr }
+    ).segments;
+
+    // Eaten bar: green portion (under budget) + red portion (over budget)
     const eatenWidth = (data.totalEaten / maxVal) * 100;
+    const greenEatenPct = data.totalEaten <= totalBudget
+        ? eatenWidth
+        : (totalBudget / maxVal) * 100;
+    const redEatenPct = data.totalEaten > totalBudget
+        ? ((data.totalEaten - totalBudget) / maxVal) * 100
+        : 0;
 
     return (
         <motion.div
@@ -217,7 +261,7 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
             <h2 className="text-xl font-black tracking-tight text-white mb-10 text-center">Where your calories went</h2>
 
             <div className="space-y-6 w-full max-w-md mx-auto">
-                {/* BMR Bar */}
+                {/* BMR Bar — fills left to right from 0 */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-indigo-300 uppercase tracking-widest">🫀 Body Burns (BMR)</span>
@@ -231,7 +275,7 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
                     </div>
                     <div className="h-10 bg-white/5 rounded-xl overflow-hidden relative">
                         <motion.div
-                            className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-xl"
+                            className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-xl absolute left-0"
                             initial={{ width: "0%" }}
                             animate={{ width: phase >= 1 ? `${bmrWidth}%` : "0%" }}
                             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -239,8 +283,8 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
                     </div>
                 </div>
 
-                {/* Workout Bars */}
-                {data.workouts.map((w, i) => (
+                {/* Workout Bars — each starts where previous ends (waterfall) */}
+                {workoutSegments.map((w, i) => (
                     <div key={i} className="space-y-2">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-brand-emerald uppercase tracking-widest">
@@ -255,10 +299,17 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
                             </motion.span>
                         </div>
                         <div className="h-10 bg-white/5 rounded-xl overflow-hidden relative">
+                            {/* Ghost spacer showing BMR + previous workouts (faded) */}
+                            <div
+                                className="h-full bg-white/[0.03] absolute left-0 rounded-l-xl"
+                                style={{ width: `${w.startPct}%` }}
+                            />
+                            {/* Workout segment fills from the cumulative start position */}
                             <motion.div
-                                className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-xl"
+                                className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-r-xl absolute"
+                                style={{ left: `${w.startPct}%` }}
                                 initial={{ width: "0%" }}
-                                animate={{ width: phase >= 2 ? `${workoutWidths[i]}%` : "0%" }}
+                                animate={{ width: phase >= 2 ? `${w.widthPct}%` : "0%" }}
                                 transition={{ duration: 0.6, delay: i * 0.2, ease: [0.16, 1, 0.3, 1] }}
                             />
                         </div>
@@ -271,7 +322,7 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
                     </div>
                 )}
 
-                {/* Divider */}
+                {/* Total Budget divider */}
                 <motion.div
                     className="border-t border-white/10 pt-2"
                     initial={{ opacity: 0 }}
@@ -283,7 +334,7 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
                     </div>
                 </motion.div>
 
-                {/* Eaten Bar — fills RIGHT to LEFT */}
+                {/* Eaten Bar — fills RIGHT to LEFT, green for earned, red for exceeded */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">🍽️ Calories Eaten</span>
@@ -296,13 +347,34 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
                         </motion.span>
                     </div>
                     <div className="h-10 bg-white/5 rounded-xl overflow-hidden relative flex justify-end">
+                        {/* Red portion (over budget) — fills first from right */}
+                        {redEatenPct > 0 && (
+                            <motion.div
+                                className="h-full bg-gradient-to-l from-red-500 to-red-600 absolute right-0"
+                                initial={{ width: "0%" }}
+                                animate={{ width: phase >= 3 ? `${redEatenPct}%` : "0%" }}
+                                transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                            />
+                        )}
+                        {/* Green portion (within budget) — fills from right, before red */}
                         <motion.div
-                            className="h-full bg-gradient-to-l from-amber-500 to-amber-600 rounded-xl"
+                            className={`h-full bg-gradient-to-l from-emerald-500 to-emerald-600 absolute ${redEatenPct > 0 ? "" : "rounded-l-xl"}`}
+                            style={redEatenPct > 0 ? { right: `${redEatenPct}%` } : { right: "0%" }}
                             initial={{ width: "0%" }}
-                            animate={{ width: phase >= 3 ? `${eatenWidth}%` : "0%" }}
+                            animate={{ width: phase >= 3 ? `${greenEatenPct}%` : "0%" }}
                             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                         />
                     </div>
+                    {redEatenPct > 0 && phase >= 3 && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex justify-end gap-3 text-[10px] font-bold uppercase tracking-widest"
+                        >
+                            <span className="text-emerald-400">Earned: {totalBudget.toLocaleString()}</span>
+                            <span className="text-red-400">Over: +{(data.totalEaten - totalBudget).toLocaleString()}</span>
+                        </motion.div>
+                    )}
                 </div>
 
                 {/* NET RESULT */}
@@ -332,7 +404,7 @@ function CalorieBudgetStep({ data, onNext }: { data: RecapData; onNext: () => vo
                 </AnimatePresence>
             </div>
 
-            {/* Next button appears after animation */}
+            {/* Next button */}
             <AnimatePresence>
                 {phase >= 4 && (
                     <motion.button
@@ -390,7 +462,7 @@ function HabitsStep({ data, onNext }: { data: RecapData; onNext: () => void }) {
                     transition={{ delay: 0.6 }}
                     className="mt-6 text-brand-emerald text-sm font-bold flex items-center gap-1.5"
                 >
-                    <Flame className="w-4 h-4" /> {data.habitStreak} day streak
+                    <Flame className="w-4 h-4" /> {data.habitStreak} day perfect streak
                 </motion.p>
             )}
 
@@ -404,7 +476,7 @@ function HabitsStep({ data, onNext }: { data: RecapData; onNext: () => void }) {
     );
 }
 
-// ─── STEP 4: PROFILE CARD UPGRADE ──────────────────────────────
+// ─── STEP 4: PROFILE CARD UPGRADE (streaks + badge card) ────────
 
 function ProfileUpgradeStep({ data, onComplete }: { data: RecapData; onComplete: () => void }) {
     const [showUpgrade, setShowUpgrade] = useState(false);
@@ -414,15 +486,39 @@ function ProfileUpgradeStep({ data, onComplete }: { data: RecapData; onComplete:
         return () => clearTimeout(t);
     }, []);
 
-    const totalBefore = data.currentPoints.nutrition + data.currentPoints.fitness + data.currentPoints.habits;
     const totalEarned = data.pointsEarned.nutrition + data.pointsEarned.fitness + data.pointsEarned.habits;
-    const totalAfter = totalBefore + totalEarned;
 
     const pillars = [
-        { label: "Nutrition", emoji: "🍎", icon: Apple, before: data.currentPoints.nutrition, earned: data.pointsEarned.nutrition, color: "text-emerald-400" },
-        { label: "Fitness", emoji: "💪", icon: Dumbbell, before: data.currentPoints.fitness, earned: data.pointsEarned.fitness, color: "text-blue-400" },
-        { label: "Habits", emoji: "🧘", icon: CheckCircle2, before: data.currentPoints.habits, earned: data.pointsEarned.habits, color: "text-purple-400" },
+        {
+            label: "Nutrition",
+            emoji: "🍎",
+            current: data.streaks.nutrition.current,
+            best: data.streaks.nutrition.best,
+            earned: data.pointsEarned.nutrition,
+        },
+        {
+            label: "Fitness",
+            emoji: "💪",
+            current: data.streaks.fitness.current,
+            best: data.streaks.fitness.best,
+            earned: data.pointsEarned.fitness,
+        },
+        {
+            label: "Perfect Days",
+            emoji: "🧘",
+            current: data.streaks.habits.current,
+            best: data.streaks.habits.best,
+            earned: data.pointsEarned.habits,
+        },
     ];
+
+    // Updated streaks for the badge card (after today's points)
+    const newNutritionStreak = data.streaks.nutrition.current + data.pointsEarned.nutrition;
+    const newFitnessStreak = data.streaks.fitness.current + data.pointsEarned.fitness;
+    const newHabitsStreak = data.streaks.habits.current + data.pointsEarned.habits;
+    const newNutritionBest = Math.max(data.streaks.nutrition.best, newNutritionStreak);
+    const newFitnessBest = Math.max(data.streaks.fitness.best, newFitnessStreak);
+    const newHabitsBest = Math.max(data.streaks.habits.best, newHabitsStreak);
 
     return (
         <motion.div
@@ -432,30 +528,31 @@ function ProfileUpgradeStep({ data, onComplete }: { data: RecapData; onComplete:
             className="flex-1 flex flex-col justify-center items-center"
         >
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold mb-2">Your Trak Card</p>
-            <h2 className="text-xl font-black tracking-tight text-white mb-8">
+            <h2 className="text-xl font-black tracking-tight text-white mb-6">
                 {totalEarned > 0 ? `+${totalEarned} point${totalEarned > 1 ? "s" : ""} earned 🔥` : "No points today"}
             </h2>
 
-            {/* Profile Card */}
+            {/* Streak Summary Card */}
             <motion.div
-                className="w-full max-w-sm rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 p-6 space-y-5 relative overflow-hidden"
+                className="w-full max-w-sm rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 p-5 space-y-4 relative overflow-hidden"
                 animate={showUpgrade ? { boxShadow: "0 0 40px rgba(34,197,94,0.15)" } : undefined}
             >
                 <div className="absolute top-0 right-0 w-40 h-40 bg-brand-emerald/10 blur-[60px] -translate-y-1/2 translate-x-1/2 rounded-full pointer-events-none" />
 
                 <div className="relative z-10">
-                    <h3 className="text-lg font-black text-white">{data.userName}</h3>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">Trak Member</p>
+                    <h3 className="text-base font-black text-white">{data.userName}</h3>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Current Streaks</p>
                 </div>
 
-                <div className="space-y-4 relative z-10">
+                <div className="space-y-3 relative z-10">
                     {pillars.map((p, i) => (
                         <div key={i} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-base">{p.emoji}</span>
-                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{p.label}</span>
-                            </div>
                             <div className="flex items-center gap-2">
+                                <span className="text-sm">{p.emoji}</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{p.label}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {/* Current streak */}
                                 <AnimatePresence mode="wait">
                                     {showUpgrade && p.earned > 0 ? (
                                         <motion.div
@@ -463,54 +560,56 @@ function ProfileUpgradeStep({ data, onComplete }: { data: RecapData; onComplete:
                                             initial={{ opacity: 0, scale: 1.5 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: i * 0.3 + 0.2, type: "spring", damping: 12 }}
-                                            className="flex items-center gap-1.5"
+                                            className="flex items-center gap-1"
                                         >
-                                            <span className="text-lg font-black text-white">{p.before + p.earned}</span>
+                                            <span className="text-sm font-black text-white">{p.current + p.earned}</span>
                                             <motion.span
-                                                initial={{ opacity: 0, x: -5 }}
+                                                initial={{ opacity: 0, x: -3 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: i * 0.3 + 0.5 }}
-                                                className="text-[10px] font-black text-brand-emerald"
+                                                className="text-[9px] font-black text-brand-emerald"
                                             >
                                                 +{p.earned} ✨
                                             </motion.span>
                                         </motion.div>
                                     ) : (
-                                        <motion.span
-                                            key="base"
-                                            className="text-lg font-black text-white/60"
-                                        >
-                                            {p.before}
+                                        <motion.span key="base" className="text-sm font-black text-white/60">
+                                            {p.current}
                                         </motion.span>
                                     )}
                                 </AnimatePresence>
+                                {/* Divider */}
+                                <span className="text-[9px] text-muted-foreground/40">/</span>
+                                {/* Best streak */}
+                                <span className="text-[10px] font-bold text-muted-foreground">
+                                    {Math.max(p.best, p.current + p.earned)} best
+                                </span>
                             </div>
                         </div>
                     ))}
                 </div>
+            </motion.div>
 
-                {/* Overall */}
-                <motion.div
-                    className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between"
-                    animate={showUpgrade ? { opacity: 1 } : undefined}
-                >
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Overall</span>
-                    <AnimatePresence mode="wait">
-                        {showUpgrade && totalEarned > 0 ? (
-                            <motion.span
-                                key="up"
-                                initial={{ opacity: 0, scale: 1.3 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 1.2, type: "spring", damping: 12 }}
-                                className="text-2xl font-black text-white"
-                            >
-                                {totalAfter}
-                            </motion.span>
-                        ) : (
-                            <span className="text-2xl font-black text-white/60">{totalBefore}</span>
-                        )}
-                    </AnimatePresence>
-                </motion.div>
+            {/* Profile Badge Card — with updated corner streaks */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: showUpgrade ? 1 : 0, y: showUpgrade ? 0 : 20 }}
+                transition={{ delay: 1.2 }}
+                className="w-full max-w-sm mt-4"
+            >
+                <ProfileBadgeCard
+                    initials={data.userInitials}
+                    sinceDate={data.sinceDate}
+                    memberNumber={data.memberNumber}
+                    isTrakPlus={data.isTrakPlus}
+                    nutritionStreak={showUpgrade ? newNutritionBest : data.streaks.nutrition.best}
+                    habitsStreak={showUpgrade ? newHabitsBest : data.streaks.habits.best}
+                    fitnessStreak={showUpgrade ? newFitnessBest : data.streaks.fitness.best}
+                    currentNutritionStreak={showUpgrade ? newNutritionStreak : data.streaks.nutrition.current}
+                    currentHabitsStreak={showUpgrade ? newHabitsStreak : data.streaks.habits.current}
+                    currentFitnessStreak={showUpgrade ? newFitnessStreak : data.streaks.fitness.current}
+                    name={data.userName}
+                />
             </motion.div>
 
             <motion.button
@@ -518,7 +617,7 @@ function ProfileUpgradeStep({ data, onComplete }: { data: RecapData; onComplete:
                 animate={{ opacity: 1 }}
                 transition={{ delay: 2 }}
                 onClick={onComplete}
-                className="mt-10 px-8 py-3.5 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center gap-2 transition-transform active:scale-[0.97]"
+                className="mt-8 px-8 py-3.5 bg-brand-emerald text-brand-black font-bold rounded-2xl flex items-center gap-2 transition-transform active:scale-[0.97]"
             >
                 Dominate Today <ChevronRight className="w-4 h-4" />
             </motion.button>
