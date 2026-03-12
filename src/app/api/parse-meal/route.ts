@@ -114,14 +114,14 @@ All values should be realistic estimates for a typical portion of the food descr
         const moonshotData = await moonshotRes.json();
         let aiResponseText = moonshotData.choices[0].message.content.trim();
 
-        // Clean up potential markdown code blocks returned by the model
-        if (aiResponseText.startsWith("```json")) {
-            aiResponseText = aiResponseText.replace(/^```json/, "").replace(/```$/, "").trim();
-        } else if (aiResponseText.startsWith("```")) {
-            aiResponseText = aiResponseText.replace(/^```/, "").replace(/```$/, "").trim();
+        // Robust extraction of JSON object from the AI response
+        const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            console.error("Failed to find JSON block in AI response:", aiResponseText);
+            throw new Error("AI returned malformed data (no JSON block found).");
         }
-
-        const parsedMacros = JSON.parse(aiResponseText);
+        const cleanedJsonText = jsonMatch[0];
+        const parsedMacros = JSON.parse(cleanedJsonText);
 
         if (previewOnly) {
             return NextResponse.json(parsedMacros);
