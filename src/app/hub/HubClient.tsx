@@ -12,6 +12,7 @@ import { WeeklyReviewOverlay } from "@/components/ui/WeeklyReviewOverlay";
 import { HubHeroCard, HeroCardType } from "@/components/hub/HubHeroCard";
 import { HubVitalSigns } from "@/components/hub/HubVitalSigns";
 import { HubActionDeck, ActionCard } from "@/components/hub/HubActionDeck";
+import { SquadPulse } from "@/components/hub/SquadPulse";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 
 export default function HubClient() {
@@ -143,7 +144,20 @@ export default function HubClient() {
     // 3. Action Deck Population
     const actionCards: ActionCard[] = [];
 
-    if (!whoopConnected) {
+    if (whoopConnected) {
+        actionCards.push({
+            id: "whoop_data",
+            title: "Whoop",
+            subtitle: whoopData
+                ? `Recovery ${whoopData.recovery_score ?? '--'}% · Strain ${whoopData.strain?.toFixed(1) ?? '--'}`
+                : "View recovery & sleep data",
+            icon: Zap,
+            iconColor: "text-emerald-400",
+            iconBg: "bg-emerald-400/10",
+            actionLabel: "View Data",
+            actionHref: "/hub/whoop"
+        });
+    } else {
         actionCards.push({
             id: "connect_whoop",
             title: "Connect Whoop",
@@ -222,7 +236,10 @@ export default function HubClient() {
                     />
                 </div>
 
-                {/* Layer 2: Vital Signs Triad */}
+                {/* Layer 2: Squad Pulse */}
+                <SquadPulse />
+
+                {/* Layer 3: Vital Signs Triad */}
                 <div className="w-full">
                     <HubVitalSigns
                         nutritionProgress={nutritionProgress}
@@ -234,41 +251,7 @@ export default function HubClient() {
                     />
                 </div>
 
-                {/* Layer 3: Connected Devices */}
-                <div className="w-full space-y-3">
-                    <h3 className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-bold">Connected Devices</h3>
-                    {whoopConnected ? (
-                        <Link href="/hub/whoop" className="block bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-all active:scale-[0.98]">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-400/10 flex items-center justify-center">
-                                        <Zap className="w-5 h-5 text-emerald-400" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-bold text-white">Whoop</h4>
-                                        <span className="text-[10px] text-emerald-400 font-semibold">● Connected</span>
-                                    </div>
-                                </div>
-                                <span className="text-muted-foreground text-xs font-semibold">View Data →</span>
-                            </div>
-                            {whoopData && (
-                                <div className="flex gap-4 mt-3 pt-3 border-t border-white/5 text-xs text-muted-foreground">
-                                    {whoopData.recovery_score != null && <span>Recovery: <span className="text-white font-bold">{whoopData.recovery_score}%</span></span>}
-                                    {whoopData.strain != null && <span>Strain: <span className="text-white font-bold">{whoopData.strain?.toFixed(1)}</span></span>}
-                                    {whoopData.hrv != null && <span>HRV: <span className="text-white font-bold">{Math.round(whoopData.hrv)}ms</span></span>}
-                                </div>
-                            )}
-                        </Link>
-                    ) : (
-                        <Link href="/api/whoop/auth" className="block bg-white/5 border border-dashed border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-all text-center">
-                            <Zap className="w-6 h-6 text-amber-400 mx-auto mb-2" />
-                            <p className="text-sm font-semibold text-white">Connect Whoop</p>
-                            <p className="text-[10px] text-muted-foreground mt-1">Auto-sync recovery, sleep & strain</p>
-                        </Link>
-                    )}
-                </div>
-
-                {/* Layer 4: Action Deck Carousel */}
+                {/* Layer 4: Quick Access Carousel (Action Deck + Devices) */}
                 <div className="w-full">
                     <HubActionDeck cards={actionCards} />
                 </div>
