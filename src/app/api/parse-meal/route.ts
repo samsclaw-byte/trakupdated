@@ -91,7 +91,6 @@ All values should be realistic estimates for a typical portion of the food descr
                         { role: "system", content: systemPrompt },
                         { role: "user", content: userContent },
                     ],
-                    temperature: 0.1,
                 }),
                 signal: controller.signal,
             });
