@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flame, CheckCircle2, User, Activity, LayoutDashboard } from "lucide-react";
+import { Flame, CheckCircle2, Users, Activity, LayoutDashboard } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MorningDebriefOverlay } from "./MorningDebriefOverlay";
@@ -12,7 +12,7 @@ const tabs = [
     { href: "/nutrition", label: "Nutrition", icon: Flame },
     { href: "/fitness", label: "Fitness", icon: Activity },
     { href: "/habits", label: "Habits", icon: CheckCircle2 },
-    { href: "/profile", label: "Profile", icon: User },
+    { href: "/squads", label: "Squads", icon: Users },
 ];
 
 export function BottomTabBar() {

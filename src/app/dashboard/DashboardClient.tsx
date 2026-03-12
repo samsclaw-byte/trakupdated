@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee, Loader2, LineChart, LogOut } from "lucide-react";
+import { Flame, ChevronRight, Apple, Drumstick, Pizza, Coffee, Loader2, LineChart, User } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -155,13 +155,12 @@ export default function DashboardClient() {
                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Today</span>
                         <span className="text-sm font-semibold">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                    <button
-                        onClick={handleSignOut}
+                    <Link
+                        href="/profile"
                         className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:text-brand-emerald active:scale-95"
-                        title="Sign out"
                     >
-                        <LogOut className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                        <User className="w-4 h-4 text-muted-foreground" />
+                    </Link>
                 </div>
             </div>
 

@@ -1,24 +1,14 @@
 "use client";
 
 import { Logo } from "@/components/ui/logo";
-import { LogOut } from "lucide-react";
+import { User } from "lucide-react";
 import { SubViewToggle } from "@/components/ui/SubViewToggle";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
-import { useRef } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import HabitsToday from "./HabitsToday";
 import HabitsTrends from "./HabitsTrends";
 
 export default function HabitsClient() {
-    const supabaseRef = useRef(createClient());
-    const router = useRouter();
-
-    const handleSignOut = async () => {
-        await supabaseRef.current.auth.signOut();
-        router.push("/");
-    };
-
     return (
         <div className="flex flex-col min-h-screen bg-background pb-24">
             {/* Header */}
@@ -29,13 +19,12 @@ export default function HabitsClient() {
                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Today</span>
                         <span className="text-sm font-semibold">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                    <button
-                        onClick={handleSignOut}
+                    <Link
+                        href="/profile"
                         className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:text-brand-emerald active:scale-95"
-                        title="Sign out"
                     >
-                        <LogOut className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                        <User className="w-4 h-4 text-muted-foreground" />
+                    </Link>
                 </div>
             </div>
 

@@ -104,7 +104,7 @@ export default function FitnessToday() {
     const totalCaloriesBurned = workouts.reduce((sum, w) => sum + w.calories_burned, 0);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-32">
             {/* Main Active Burn Ring */}
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 relative overflow-hidden backdrop-blur-xl">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-emerald/10 blur-[50px] rounded-full translate-x-1/2 -translate-y-1/2" />
@@ -197,10 +197,10 @@ export default function FitnessToday() {
                         })
                     )}
                 </AnimatePresence>
-            </div >
+            </div>
 
             {/* Floating Action Button */}
-            < div className="fixed bottom-28 right-6" >
+            <div className="fixed bottom-28 right-6 z-40">
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -209,7 +209,7 @@ export default function FitnessToday() {
                 >
                     <Plus className="w-6 h-6" />
                 </motion.button>
-            </div >
+            </div>
 
             <LogWorkoutModal
                 isOpen={isModalOpen}
@@ -219,6 +219,6 @@ export default function FitnessToday() {
                     setIsModalOpen(false);
                 }}
             />
-        </div >
+        </div>
     );
 }

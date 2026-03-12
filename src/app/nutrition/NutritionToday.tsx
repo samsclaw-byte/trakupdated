@@ -227,7 +227,7 @@ export default function NutritionToday() {
                 setMeals(prev => [newMealData, ...prev]);
 
                 const newConsumed = consumed + (Number(newMealData.calories) || 0);
-                if (consumed < goal * 0.9 && newConsumed >= goal * 0.9 && newConsumed <= goal + 150) {
+                if (newConsumed <= goal && newConsumed > 0) {
                     if (user) {
                         logSquadEvent(user.id, 'calorie_target_hit', { calories: newConsumed });
                     }
@@ -273,7 +273,7 @@ export default function NutritionToday() {
 
         // Squad logic
         const newConsumed = consumed + (Number(newMeal.calories) || 0);
-        if (consumed < goal * 0.9 && newConsumed >= goal * 0.9 && newConsumed <= goal + 150) {
+        if (newConsumed <= goal && newConsumed > 0) {
             logSquadEvent(user.id, 'calorie_target_hit', { calories: newConsumed });
         }
     };
@@ -625,8 +625,8 @@ export default function NutritionToday() {
                     ref={mealInputRef}
                     tabIndex={-1}
                     className={`flex flex-col gap-3 rounded-3xl p-3 transition-all outline-none ${isEditMode
-                            ? 'bg-brand-emerald/10 border border-brand-emerald/60 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-                            : 'bg-white/5 border border-white/10 focus-within:bg-white/[0.07] focus-within:border-brand-emerald/50'
+                        ? 'bg-brand-emerald/10 border border-brand-emerald/60 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                        : 'bg-white/5 border border-white/10 focus-within:bg-white/[0.07] focus-within:border-brand-emerald/50'
                         }`}
                 >
                     {isEditMode && (

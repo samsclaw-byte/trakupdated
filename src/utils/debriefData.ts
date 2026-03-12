@@ -39,23 +39,69 @@ export async function calculateDebriefData(supabase: SupabaseClient, userId: str
     };
 
     try {
-        // --- 1. Nutrition Status ---
-        // We'll approximate current nutrition streak by checking if yesterday was logged.
-        // Full consecutive span calculation is heavy, so we check meals from yesterday.
-        const { data: yesterdayMeals } = await supabase
+        // --- 1. Nutrition Status (Under calorie goal = achieved) ---
+        // Fetch user's daily calorie goal
+        const { data: userProfile } = await supabase
+            .from('users')
+            .select('daily_calories')
+            .eq('id', userId)
+            .single();
+        const dailyCalorieGoal = userProfile?.daily_calories || 2400;
+
+        // Fetch last 30 days of meals with calorie sums per day
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+        const { data: recentMeals } = await supabase
             .from('meals')
-            .select('id')
+            .select('calories, created_at')
             .eq('user_id', userId)
-            .gte('created_at', new Date(yesterday).toISOString())
-            .lt('created_at', new Date(today).toISOString())
-            .limit(1);
+            .gte('created_at', thirtyDaysAgo.toISOString());
 
-        const nutritionLogged = (yesterdayMeals && yesterdayMeals.length > 0) ? true : false;
+        // Sum calories per day
+        const caloriesByDay = new Map<string, number>();
+        if (recentMeals) {
+            for (const meal of recentMeals) {
+                const mealDate = new Date(meal.created_at);
+                const dayStr = new Date(mealDate.getTime() - (mealDate.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+                caloriesByDay.set(dayStr, (caloriesByDay.get(dayStr) || 0) + (Number(meal.calories) || 0));
+            }
+        }
 
-        // Mocking complex streak calculation for nutrition MVP
+        // Check if yesterday was under calorie goal (must have logged at least 1 meal)
+        const yesterdayCalories = caloriesByDay.get(yesterdayStr) || 0;
+        const yesterdayHasMeals = caloriesByDay.has(yesterdayStr);
+        const nutritionLogged = yesterdayHasMeals && yesterdayCalories <= dailyCalorieGoal;
+
+        // Calculate streak: count backwards from yesterday
+        let nutritionStreak = 0;
+        let nutritionBest = 0;
+        const checkDate = new Date(yesterday);
+        while (true) {
+            const dStr = new Date(checkDate.getTime() - (checkDate.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+            const dayCals = caloriesByDay.get(dStr);
+            if (dayCals !== undefined && dayCals <= dailyCalorieGoal) {
+                nutritionStreak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+        // Simple best: scan all days for longest consecutive run
+        let currentRun = 0;
+        const sortedDays = [...caloriesByDay.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        for (let i = 0; i < sortedDays.length; i++) {
+            if (sortedDays[i][1] <= dailyCalorieGoal) {
+                currentRun++;
+                nutritionBest = Math.max(nutritionBest, currentRun);
+            } else {
+                currentRun = 0;
+            }
+        }
+
         DEFAULT_STATS.nutrition.yesterdayStatus = nutritionLogged;
-        DEFAULT_STATS.nutrition.currentStreak = nutritionLogged ? 1 : 0; // Simplified
-        DEFAULT_STATS.nutrition.bestStreak = nutritionLogged ? 1 : 0;
+        DEFAULT_STATS.nutrition.currentStreak = nutritionStreak;
+        DEFAULT_STATS.nutrition.bestStreak = Math.max(nutritionBest, nutritionStreak);
 
         // --- 2. Fitness Status ---
         const { data: yesterdayWorkouts } = await supabase

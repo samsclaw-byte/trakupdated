@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Logo } from "@/components/ui/logo";
-import { LogOut, Bell, Brain, Zap, Coffee } from "lucide-react";
+import { User, Bell, Brain, Zap, Coffee } from "lucide-react";
 import Link from "next/link";
 import { WeeklyReviewOverlay } from "@/components/ui/WeeklyReviewOverlay";
 
@@ -135,7 +135,8 @@ export default function HubClient() {
     const burnedCalories = fitness.reduce((sum, w) => sum + (Number(w.calories_burned) || 0), 0);
     const activeTarget = 500; // Static target for now
 
-    const nutritionProgress = (consumedCalories / goalCalories) * 100;
+    // Nutrition: under calorie goal = 100% achieved
+    const nutritionProgress = consumedCalories <= goalCalories ? 100 : Math.max(0, 100 - ((consumedCalories - goalCalories) / goalCalories) * 100);
     const fitnessProgress = (burnedCalories / activeTarget) * 100;
     const habitsProgress = habitsStats.total > 0 ? (habitsStats.completed / habitsStats.total) * 100 : 0;
 
@@ -197,12 +198,12 @@ export default function HubClient() {
                     <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 active:scale-95">
                         <Bell className="w-4 h-4 text-muted-foreground" />
                     </button>
-                    <button
-                        onClick={handleSignOut}
-                        className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:text-red-400 active:scale-95"
+                    <Link
+                        href="/profile"
+                        className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:text-brand-emerald active:scale-95"
                     >
-                        <LogOut className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                        <User className="w-4 h-4 text-muted-foreground" />
+                    </Link>
                 </div>
             </div>
 
@@ -233,7 +234,41 @@ export default function HubClient() {
                     />
                 </div>
 
-                {/* Layer 3: Action Deck Carousel */}
+                {/* Layer 3: Connected Devices */}
+                <div className="w-full space-y-3">
+                    <h3 className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-bold">Connected Devices</h3>
+                    {whoopConnected ? (
+                        <Link href="/hub/whoop" className="block bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-all active:scale-[0.98]">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-400/10 flex items-center justify-center">
+                                        <Zap className="w-5 h-5 text-emerald-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-white">Whoop</h4>
+                                        <span className="text-[10px] text-emerald-400 font-semibold">● Connected</span>
+                                    </div>
+                                </div>
+                                <span className="text-muted-foreground text-xs font-semibold">View Data →</span>
+                            </div>
+                            {whoopData && (
+                                <div className="flex gap-4 mt-3 pt-3 border-t border-white/5 text-xs text-muted-foreground">
+                                    {whoopData.recovery_score != null && <span>Recovery: <span className="text-white font-bold">{whoopData.recovery_score}%</span></span>}
+                                    {whoopData.strain != null && <span>Strain: <span className="text-white font-bold">{whoopData.strain?.toFixed(1)}</span></span>}
+                                    {whoopData.hrv != null && <span>HRV: <span className="text-white font-bold">{Math.round(whoopData.hrv)}ms</span></span>}
+                                </div>
+                            )}
+                        </Link>
+                    ) : (
+                        <Link href="/api/whoop/auth" className="block bg-white/5 border border-dashed border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-all text-center">
+                            <Zap className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+                            <p className="text-sm font-semibold text-white">Connect Whoop</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">Auto-sync recovery, sleep & strain</p>
+                        </Link>
+                    )}
+                </div>
+
+                {/* Layer 4: Action Deck Carousel */}
                 <div className="w-full">
                     <HubActionDeck cards={actionCards} />
                 </div>
