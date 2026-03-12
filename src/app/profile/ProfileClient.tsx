@@ -19,10 +19,52 @@ interface UserProfile {
     is_trak_plus: boolean;
 }
 
+/** Compute current and best streak from a descending-sorted array of date strings */
+function computeStreaks(dates: string[]): { current: number; best: number } {
+    if (dates.length === 0) return { current: 0, best: 0 };
+
+    // Current streak: count consecutive days backward from today or yesterday
+    const now = new Date();
+    const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    const yest = new Date(now);
+    yest.setDate(yest.getDate() - 1);
+    const yesterdayStr = new Date(yest.getTime() - (yest.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+    let currentStreak = 0;
+    const firstDate = dates[0];
+    if (firstDate === todayStr || firstDate === yesterdayStr) {
+        currentStreak = 1;
+        for (let i = 1; i < dates.length; i++) {
+            const prev = new Date(dates[i - 1] + 'T12:00:00Z');
+            const curr = new Date(dates[i] + 'T12:00:00Z');
+            const diff = Math.round((prev.getTime() - curr.getTime()) / 86400000);
+            if (diff === 1) { currentStreak++; }
+            else { break; }
+        }
+    }
+
+    // Best streak: iterate all dates
+    let best = dates.length > 0 ? 1 : 0;
+    let streak = 1;
+    for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1] + 'T12:00:00Z');
+        const curr = new Date(dates[i] + 'T12:00:00Z');
+        const diff = Math.round((prev.getTime() - curr.getTime()) / 86400000);
+        if (diff === 1) { streak++; best = Math.max(best, streak); }
+        else { streak = 1; }
+    }
+
+    return { current: currentStreak, best: Math.max(best, currentStreak) };
+}
+
 export default function ProfileClient() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [pillarStreaks, setPillarStreaks] = useState({ nutrition: 0, habits: 0, fitness: 0 });
+    const [pillarStreaks, setPillarStreaks] = useState({
+        nutrition: { current: 0, best: 0 },
+        habits: { current: 0, best: 0 },
+        fitness: { current: 0, best: 0 },
+    });
     const [showProgress, setShowProgress] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
     const [whoopConnected, setWhoopConnected] = useState(false);
@@ -80,25 +122,10 @@ export default function ProfileClient() {
                 const perfectDates = Object.keys(logsByDate).filter(date => {
                     const completedOnDate = logsByDate[date];
                     return activeHabitIds.every((id: string) => completedOnDate.has(id));
-                }).sort((a, b) => b.localeCompare(a)); // Descending sort
+                }).sort((a, b) => b.localeCompare(a));
 
-                let bestHabitsStreak = 0;
-                if (perfectDates.length > 0) {
-                    let currentStreak = 1;
-                    bestHabitsStreak = 1;
-                    for (let i = 1; i < perfectDates.length; i++) {
-                        const prev = new Date(perfectDates[i - 1]);
-                        const curr = new Date(perfectDates[i]);
-                        const diffDays = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
-                        if (Math.round(diffDays) === 1) {
-                            currentStreak++;
-                            bestHabitsStreak = Math.max(bestHabitsStreak, currentStreak);
-                        } else {
-                            currentStreak = 1;
-                        }
-                    }
-                }
-                setPillarStreaks(prev => ({ ...prev, habits: bestHabitsStreak }));
+                const habitsResult = computeStreaks(perfectDates);
+                setPillarStreaks(prev => ({ ...prev, habits: habitsResult }));
             }
 
             // Load workout streak (consecutive days with workouts)
@@ -107,24 +134,33 @@ export default function ProfileClient() {
                 .select('created_at')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
-                .limit(200);
+                .limit(365);
 
             if (workoutDays && workoutDays.length > 0) {
-                const uniqueDays = [...new Set(workoutDays.map((w: Record<string, unknown>) => new Date(w.created_at as string).toISOString().split('T')[0]))];
-                let fitnessStreak = 1;
-                let bestFitnessStreak = 1;
-                for (let i = 1; i < uniqueDays.length; i++) {
-                    const prev = new Date(uniqueDays[i - 1]);
-                    const curr = new Date(uniqueDays[i]);
-                    const diffDays = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
-                    if (Math.round(diffDays) === 1) {
-                        fitnessStreak++;
-                        bestFitnessStreak = Math.max(bestFitnessStreak, fitnessStreak);
-                    } else {
-                        fitnessStreak = 1;
-                    }
-                }
-                setPillarStreaks(prev => ({ ...prev, fitness: bestFitnessStreak }));
+                const uniqueDays = [...new Set(workoutDays.map((w: Record<string, unknown>) => {
+                    const d = new Date(w.created_at as string);
+                    return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                }))].sort((a, b) => b.localeCompare(a));
+                const fitnessResult = computeStreaks(uniqueDays);
+                setPillarStreaks(prev => ({ ...prev, fitness: fitnessResult }));
+            }
+
+            // Load nutrition streak (consecutive days under calorie budget with meals)
+            const { data: nutritionEvents } = await supabase
+                .from('squad_feed')
+                .select('created_at')
+                .eq('user_id', user.id)
+                .eq('event_type', 'calorie_target_hit')
+                .order('created_at', { ascending: false })
+                .limit(365);
+
+            if (nutritionEvents && nutritionEvents.length > 0) {
+                const uniqueDays = [...new Set(nutritionEvents.map((e: { created_at: string }) => {
+                    const d = new Date(e.created_at);
+                    return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                }))].sort((a, b) => b.localeCompare(a));
+                const nutritionResult = computeStreaks(uniqueDays);
+                setPillarStreaks(prev => ({ ...prev, nutrition: nutritionResult }));
             }
 
             // Check Whoop connection status
@@ -190,9 +226,12 @@ export default function ProfileClient() {
                                 sinceDate={profile ? formatDate(profile.created_at) : 'Mar 2026'}
                                 memberNumber={profile ? formatMemberNum(profile.member_number) : '0001'}
                                 isTrakPlus={profile?.is_trak_plus || false}
-                                nutritionStreak={pillarStreaks.nutrition}
-                                habitsStreak={pillarStreaks.habits}
-                                fitnessStreak={pillarStreaks.fitness}
+                                nutritionStreak={pillarStreaks.nutrition.best}
+                                habitsStreak={pillarStreaks.habits.best}
+                                fitnessStreak={pillarStreaks.fitness.best}
+                                currentNutritionStreak={pillarStreaks.nutrition.current}
+                                currentHabitsStreak={pillarStreaks.habits.current}
+                                currentFitnessStreak={pillarStreaks.fitness.current}
                                 tappable
                                 name={profile?.name}
                             />
@@ -206,9 +245,9 @@ export default function ProfileClient() {
 
                         {/* Pillar Progress Cards */}
                         <PillarProgressCards
-                            nutritionStreak={pillarStreaks.nutrition}
-                            habitsStreak={pillarStreaks.habits}
-                            fitnessStreak={pillarStreaks.fitness}
+                            nutritionStreak={pillarStreaks.nutrition.best}
+                            habitsStreak={pillarStreaks.habits.best}
+                            fitnessStreak={pillarStreaks.fitness.best}
                         />
 
                         {/* Upgrade Button (If not premium) */}

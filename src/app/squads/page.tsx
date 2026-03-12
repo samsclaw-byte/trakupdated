@@ -40,6 +40,7 @@ interface SquadMember {
     };
     habitsStreak: number;
     fitnessStreak: number;
+    nutritionStreak: number;
 }
 
 function SquadsContent() {
@@ -240,7 +241,31 @@ function SquadsContent() {
                             fitnessStreak = best;
                         }
 
-                        return { ...member, habitsStreak, fitnessStreak };
+                        // Nutrition streak from squad_feed
+                        const { data: nutritionEvents } = await supabase
+                            .from('squad_feed')
+                            .select('created_at')
+                            .eq('user_id', member.user_id)
+                            .eq('event_type', 'calorie_target_hit')
+                            .order('created_at', { ascending: false })
+                            .limit(100);
+
+                        let nutritionStreak = 0;
+                        if (nutritionEvents && nutritionEvents.length > 0) {
+                            const nDays = [...new Set(nutritionEvents.map((e: { created_at: string }) =>
+                                new Date(e.created_at).toISOString().split('T')[0]
+                            ))].sort((a, b) => b.localeCompare(a));
+                            nutritionStreak = 1;
+                            let nBest = 1;
+                            for (let i = 1; i < nDays.length; i++) {
+                                const diff = (new Date(nDays[i - 1]).getTime() - new Date(nDays[i]).getTime()) / 86400000;
+                                if (Math.round(diff) === 1) { nutritionStreak++; nBest = Math.max(nBest, nutritionStreak); }
+                                else { nutritionStreak = 1; }
+                            }
+                            nutritionStreak = nBest;
+                        }
+
+                        return { ...member, habitsStreak, fitnessStreak, nutritionStreak };
                     })
                 );
                 setSquadMembers(enriched as SquadMember[]);
@@ -782,7 +807,7 @@ function SquadsContent() {
                                         sinceDate={`Since ${joinedDate}`}
                                         memberNumber={memberNum}
                                         isTrakPlus={isTrakPlus}
-                                        nutritionStreak={0}
+                                        nutritionStreak={member.nutritionStreak}
                                         habitsStreak={member.habitsStreak}
                                         fitnessStreak={member.fitnessStreak}
                                         tappable={true}
