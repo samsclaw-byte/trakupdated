@@ -297,7 +297,8 @@ function TrendsView({ data, period, onChangePeriod, workouts }: {
     };
 
     // Filter workouts for the selected period using the data range
-    const oldestDataDate = data.length > 0 ? data[data.length - 1]?.date : "";
+    // data is sorted ascending (oldest first), so data[0] is the oldest date
+    const oldestDataDate = data.length > 0 ? data[0]?.date : "";
     const periodWorkouts = workouts.filter(w => w.date >= oldestDataDate);
 
     const trendConfigs = [
