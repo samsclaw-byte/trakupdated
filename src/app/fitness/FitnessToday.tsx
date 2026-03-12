@@ -31,24 +31,28 @@ export default function FitnessToday() {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [whoopRecovery, setWhoopRecovery] = useState<WhoopRecovery | null>(null);
+    const [viewDay, setViewDay] = useState<"today" | "yesterday">("today");
+    const getDateStr = (offset: number) => {
+        const d = new Date();
+        d.setDate(d.getDate() + offset);
+        return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+    };
+
     useEffect(() => {
         const fetchWorkouts = async () => {
+            setIsLoading(true);
             try {
                 const supabase = createClient();
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
-                // Fetch explicitly for today in the user's timezone
-                const now = new Date();
-                const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
-                    .toISOString()
-                    .split("T")[0];
+                const dateStr = viewDay === "today" ? getDateStr(0) : getDateStr(-1);
 
                 const { data, error } = await supabase
                     .from("workouts")
                     .select("*")
                     .eq("user_id", user.id)
-                    .eq("date", todayStr)
+                    .eq("date", dateStr)
                     .order("created_at", { ascending: false });
 
                 if (error) throw error;
@@ -66,29 +70,28 @@ export default function FitnessToday() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
-                const now = new Date();
-                const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
-                    .toISOString()
-                    .split("T")[0];
+                const dateStr = viewDay === "today" ? getDateStr(0) : getDateStr(-1);
 
                 const { data } = await supabase
                     .from("whoop_daily")
                     .select("recovery_score, hrv, resting_heart_rate, sleep_performance, strain")
                     .eq("user_id", user.id)
-                    .eq("date", todayStr)
+                    .eq("date", dateStr)
                     .single();
 
                 if (data) {
                     setWhoopRecovery(data);
+                } else {
+                    setWhoopRecovery(null);
                 }
             } catch {
-                // Silently fail — Whoop data is optional
+                setWhoopRecovery(null);
             }
         };
 
         fetchWorkouts();
         fetchWhoopRecovery();
-    }, []);
+    }, [viewDay]);
 
     const handleDeleteWorkout = async (id: string) => {
         try {
@@ -105,6 +108,24 @@ export default function FitnessToday() {
 
     return (
         <div className="space-y-6 pb-32">
+            {/* Today / Yesterday Toggle */}
+            <div className="flex items-center justify-center">
+                <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 gap-1">
+                    {(["today", "yesterday"] as const).map(day => (
+                        <button
+                            key={day}
+                            onClick={() => setViewDay(day)}
+                            className={`px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${viewDay === day
+                                    ? "bg-brand-emerald text-brand-black"
+                                    : "text-muted-foreground hover:text-white"
+                                }`}
+                        >
+                            {day}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* Main Active Burn Ring */}
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 relative overflow-hidden backdrop-blur-xl">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-emerald/10 blur-[50px] rounded-full translate-x-1/2 -translate-y-1/2" />
@@ -114,7 +135,7 @@ export default function FitnessToday() {
                         <Flame className="w-6 h-6 text-brand-emerald" />
                     </div>
                     <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                        Active Burn
+                        {viewDay === "today" ? "Active Burn" : "Yesterday's Burn"}
                     </span>
                     <div className="text-5xl font-bold tracking-tighter text-white">
                         {totalCaloriesBurned}
@@ -138,7 +159,7 @@ export default function FitnessToday() {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-                        Today&apos;s Activity
+                        {viewDay === "today" ? "Today's Activity" : "Yesterday's Activity"}
                     </h3>
                 </div>
 
@@ -185,12 +206,14 @@ export default function FitnessToday() {
                                         <span className="font-bold text-brand-emerald">
                                             {workout.calories_burned} kcal
                                         </span>
-                                        <button
-                                            onClick={() => handleDeleteWorkout(workout.id)}
-                                            className="text-muted-foreground hover:text-red-400 transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {viewDay === "today" && (
+                                            <button
+                                                onClick={() => handleDeleteWorkout(workout.id)}
+                                                className="text-muted-foreground hover:text-red-400 transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </motion.div>
                             );
@@ -199,17 +222,19 @@ export default function FitnessToday() {
                 </AnimatePresence>
             </div>
 
-            {/* Floating Action Button */}
-            <div className="fixed bottom-28 right-6 z-40">
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsModalOpen(true)}
-                    className="w-14 h-14 bg-brand-emerald hover:bg-brand-emerald/90 text-black rounded-full shadow-[0_4px_20px_rgba(34,197,94,0.4)] flex items-center justify-center transition-colors"
-                >
-                    <Plus className="w-6 h-6" />
-                </motion.button>
-            </div>
+            {/* Floating Action Button — only on today */}
+            {viewDay === "today" && (
+                <div className="fixed bottom-28 right-6 z-40">
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-14 h-14 bg-brand-emerald hover:bg-brand-emerald/90 text-black rounded-full shadow-[0_4px_20px_rgba(34,197,94,0.4)] flex items-center justify-center transition-colors"
+                    >
+                        <Plus className="w-6 h-6" />
+                    </motion.button>
+                </div>
+            )}
 
             <LogWorkoutModal
                 isOpen={isModalOpen}
