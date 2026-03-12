@@ -75,7 +75,7 @@ All values should be realistic estimates for a typical portion of the food descr
                 });
             }
 
-            const modelName = imageBase64 ? "moonshot-v1-8k-vision-preview" : "moonshot-v1-8k";
+            const modelName = "kimi-k2.5";
 
             moonshotRes = await fetch("https://api.moonshot.ai/v1/chat/completions", {
                 method: "POST",
