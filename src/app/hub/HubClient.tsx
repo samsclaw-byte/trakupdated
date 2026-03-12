@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
 import { User, Bell, Brain, Zap, Coffee } from "lucide-react";
 import Link from "next/link";
@@ -13,12 +14,17 @@ import { HubHeroCard, HeroCardType } from "@/components/hub/HubHeroCard";
 import { HubVitalSigns } from "@/components/hub/HubVitalSigns";
 import { HubActionDeck, ActionCard } from "@/components/hub/HubActionDeck";
 import { SquadPulse } from "@/components/hub/SquadPulse";
+import { DailyRecapOverlay, RecapData } from "@/components/hub/DailyRecapOverlay";
+import { calculateRecapData } from "@/utils/recapData";
 import { BottomTabBar } from "@/components/ui/BottomTabBar";
 
 export default function HubClient() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [isRecapOpen, setIsRecapOpen] = useState(false);
+    const [recapData, setRecapData] = useState<RecapData | null>(null);
+    const [recapDismissed, setRecapDismissed] = useState(false);
     const supabase = createClient();
 
     // Data states
@@ -101,6 +107,22 @@ export default function HubClient() {
         router.push("/");
     };
 
+    const handleStartRecap = useCallback(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const rData = await calculateRecapData(supabase, user.id, profile?.name?.split(" ")[0] || "there");
+        if (rData) {
+            setRecapData(rData);
+            setIsRecapOpen(true);
+        }
+    }, [supabase, profile]);
+
+    const handleRecapComplete = useCallback(() => {
+        setIsRecapOpen(false);
+        setRecapDismissed(true);
+        localStorage.setItem("trak_recap_last_completed", new Date().toISOString());
+    }, []);
+
     if (isLoading) {
         return <div className="min-h-screen flex items-center justify-center bg-background"><div className="w-8 h-8 rounded-full border-2 border-brand-emerald border-t-transparent animate-spin" /></div>;
     }
@@ -122,7 +144,20 @@ export default function HubClient() {
         isWeeklyReviewPending = true;
     }
 
-    if (isMorning && lastWeighIn !== todayLocalISO) {
+    // Check if recap was already completed today
+    const LS_RECAP_KEY = "trak_recap_last_completed";
+    const recapAlreadyDone = (() => {
+        if (recapDismissed) return true;
+        const last = typeof window !== 'undefined' ? localStorage.getItem(LS_RECAP_KEY) : null;
+        if (!last) return false;
+        const today = new Date();
+        return new Date(last).toDateString() === today.toDateString();
+    })();
+
+    // Daily recap takes highest priority (if not done today)
+    if (!recapAlreadyDone) {
+        heroType = "daily_recap";
+    } else if (isMorning && lastWeighIn !== todayLocalISO) {
         heroType = "log_weight";
     } else if (isWeeklyReviewPending) {
         heroType = "weekly_review";
@@ -196,6 +231,12 @@ export default function HubClient() {
 
     return (
         <div className="flex flex-col min-h-screen bg-background pb-32">
+            <AnimatePresence>
+                {isRecapOpen && recapData && (
+                    <DailyRecapOverlay data={recapData} onComplete={handleRecapComplete} />
+                )}
+            </AnimatePresence>
+
             <WeeklyReviewOverlay
                 isOpen={isReviewModalOpen}
                 onClose={() => setIsReviewModalOpen(false)}
@@ -229,7 +270,9 @@ export default function HubClient() {
                         userName={profile?.name?.split(" ")[0]}
                         data={whoopData}
                         onAction={() => {
-                            if (heroType === "log_weight" || heroType === "weekly_review") {
+                            if (heroType === "daily_recap") {
+                                handleStartRecap();
+                            } else if (heroType === "log_weight" || heroType === "weekly_review") {
                                 setIsReviewModalOpen(true);
                             }
                         }}

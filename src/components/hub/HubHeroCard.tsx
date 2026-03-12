@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Scale, HeartPulse, Check, Sparkles, ChevronRight } from "lucide-react";
+import { Scale, HeartPulse, Check, Sparkles, ChevronRight, Sun } from "lucide-react";
 import Link from "next/link";
 
-export type HeroCardType = "log_weight" | "weekly_review" | "synced_whoop" | "all_caught_up";
+export type HeroCardType = "daily_recap" | "log_weight" | "weekly_review" | "synced_whoop" | "all_caught_up";
 
 interface HubHeroCardProps {
     type: HeroCardType;
@@ -41,6 +41,39 @@ export function HubHeroCard({ type, onAction, data, userName = "there" }: HubHer
                         className="w-full py-3.5 bg-amber-500 text-amber-950 font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-[0.98]"
                     >
                         Log Weight Now
+                    </button>
+                </div>
+            </motion.div>
+        );
+    }
+
+    if (type === "daily_recap") {
+        return (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="w-full rounded-3xl p-6 bg-gradient-to-br from-amber-500/10 via-brand-emerald/5 to-transparent border border-amber-500/20 relative overflow-hidden"
+            >
+                <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-[0.05]" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/15 blur-[50px] -translate-y-1/2 translate-x-1/2 rounded-full pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-brand-emerald/15 blur-[40px] translate-y-1/2 -translate-x-1/2 rounded-full pointer-events-none" />
+
+                <div className="relative z-10 space-y-4">
+                    <div className="flex items-center gap-2 text-amber-400 mb-1">
+                        <Sun className="w-4 h-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Daily Recap</span>
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold tracking-tight text-white leading-tight">
+                            Your daily recap is ready.
+                        </h2>
+                        <p className="text-xs text-amber-400/70 mt-1 font-medium">Review yesterday &amp; unlock today.</p>
+                    </div>
+                    <button
+                        onClick={onAction}
+                        className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-brand-emerald text-brand-black font-bold rounded-2xl flex items-center justify-center transition-transform active:scale-[0.98]"
+                    >
+                        Start Recap
                     </button>
                 </div>
             </motion.div>
