@@ -60,19 +60,21 @@ All values should be realistic estimates for a typical portion of the food descr
 
         let moonshotRes;
         try {
-            // Build content array, either text, or text + image
-            const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
-            if (mealText) {
-                userContent.push({ type: "text", text: mealText });
-            } else if (imageBase64) {
-                userContent.push({ type: "text", text: "Parse the nutrition of this meal." });
-            }
+            let userContent: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
 
             if (imageBase64) {
+                userContent = [];
+                if (mealText) {
+                    userContent.push({ type: "text", text: mealText });
+                } else {
+                    userContent.push({ type: "text", text: "Parse the nutrition of this meal." });
+                }
                 userContent.push({
                     type: "image_url",
                     image_url: { url: imageBase64 }
                 });
+            } else {
+                userContent = mealText;
             }
 
             const modelName = "kimi-k2.5";
