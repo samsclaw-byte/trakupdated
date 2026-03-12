@@ -270,7 +270,7 @@ export default function HubClient() {
                         userName={profile?.name?.split(" ")[0]}
                         data={whoopData}
                         onAction={() => {
-                            if (heroType === "daily_recap") {
+                            if (heroType === "daily_recap" || heroType === "all_caught_up") {
                                 handleStartRecap();
                             } else if (heroType === "log_weight" || heroType === "weekly_review") {
                                 setIsReviewModalOpen(true);

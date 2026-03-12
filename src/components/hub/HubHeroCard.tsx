@@ -146,18 +146,20 @@ export function HubHeroCard({ type, onAction, data, userName = "there" }: HubHer
         <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="w-full rounded-3xl p-6 bg-white/5 border border-white/5 relative overflow-hidden"
+            onClick={onAction}
+            className="w-full rounded-3xl p-6 bg-white/5 border border-white/5 relative overflow-hidden cursor-pointer hover:bg-white/[0.07] transition-colors active:scale-[0.98]"
         >
             <div className="relative z-10 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-brand-emerald/20 flex items-center justify-center shrink-0">
                     <Check className="w-6 h-6 text-brand-emerald" />
                 </div>
-                <div>
+                <div className="flex-1">
                     <h2 className="text-lg font-bold tracking-tight text-white">
                         You&apos;re all caught up, {userName}.
                     </h2>
                     <p className="text-sm text-muted-foreground mt-0.5">Let&apos;s dominate the day.</p>
                 </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
             </div>
         </motion.div>
     );

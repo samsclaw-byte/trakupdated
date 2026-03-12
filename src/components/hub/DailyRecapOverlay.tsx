@@ -62,7 +62,7 @@ export function DailyRecapOverlay({ data, onComplete }: DailyRecapOverlayProps) 
     // Auto-advance for overview and habits (5 seconds)
     useEffect(() => {
         if (step === "overview" || step === "habits") {
-            timerRef.current = setTimeout(goNext, 5000);
+            timerRef.current = setTimeout(goNext, 30000);
             return () => { if (timerRef.current) clearTimeout(timerRef.current); };
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
