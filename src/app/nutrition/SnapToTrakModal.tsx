@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Camera, Loader2, Check } from "lucide-react";
+import { X, Camera, ImagePlus, Loader2, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface ParsedMeal {
@@ -42,6 +42,7 @@ export default function SnapToTrakModal({ isOpen, onClose, onLogMeal }: SnapToTr
     const [editData, setEditData] = useState<ParsedMeal | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const galleryInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -166,6 +167,7 @@ export default function SnapToTrakModal({ isOpen, onClose, onLogMeal }: SnapToTr
                                     Snap a photo of your meal. Our Vision AI will automatically estimate calories and macros.
                                 </p>
 
+                                {/* Camera input - opens camera directly */}
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -174,15 +176,36 @@ export default function SnapToTrakModal({ isOpen, onClose, onLogMeal }: SnapToTr
                                     ref={fileInputRef}
                                     onChange={handleFileChange}
                                 />
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-full py-5 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/10 hover:border-brand-emerald/50 group"
-                                >
-                                    <div className="p-4 rounded-full bg-brand-emerald text-brand-black group-hover:scale-110 transition-transform">
-                                        <Camera className="w-6 h-6" />
-                                    </div>
-                                    <span className="font-bold text-white tracking-wide">Open Camera / Gallery</span>
-                                </button>
+                                {/* Gallery input - opens photo picker */}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    ref={galleryInputRef}
+                                    onChange={handleFileChange}
+                                />
+
+                                <div className="w-full flex gap-3">
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex-1 py-5 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/10 hover:border-brand-emerald/50 group"
+                                    >
+                                        <div className="p-4 rounded-full bg-brand-emerald text-brand-black group-hover:scale-110 transition-transform">
+                                            <Camera className="w-6 h-6" />
+                                        </div>
+                                        <span className="font-bold text-white tracking-wide text-sm">Take Photo</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => galleryInputRef.current?.click()}
+                                        className="flex-1 py-5 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/10 hover:border-brand-emerald/50 group"
+                                    >
+                                        <div className="p-4 rounded-full bg-white/10 text-white group-hover:scale-110 transition-transform">
+                                            <ImagePlus className="w-6 h-6" />
+                                        </div>
+                                        <span className="font-bold text-white tracking-wide text-sm">Gallery</span>
+                                    </button>
+                                </div>
                             </div>
                         )}
 
